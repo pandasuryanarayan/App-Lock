@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">App Locker</string>
+    <string name="accessibility_service_description">App Locker uses this service to detect when protected apps are opened so it can immediately present the security lock screen.</string>
+</resources>

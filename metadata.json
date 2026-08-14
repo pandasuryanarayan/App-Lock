@@ -1,0 +1,6 @@
+{
+  "name": "App Locker",
+  "description": "Secure apps with PIN, Pattern, Password & Biometric protection with non-intrusive Overlay lock.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

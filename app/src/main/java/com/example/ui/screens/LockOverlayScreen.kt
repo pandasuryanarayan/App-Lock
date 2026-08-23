@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.entities.LockType
 import com.example.data.entities.SecuritySettingsEntity
 import com.example.security.AppItemInfo
+import com.example.ui.components.AppIcons
 import com.example.ui.components.PatternLockCanvas
 import com.example.ui.components.PinPadView
 import com.example.ui.theme.*
@@ -35,7 +36,8 @@ fun LockOverlayScreen(
     settings: SecuritySettingsEntity,
     onSuccessUnlock: () -> Unit,
     onFailedAttempt: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onTriggerBiometric: (() -> Unit)? = null
 ) {
     var enteredPin by remember { mutableStateOf("") }
     var enteredPass by remember { mutableStateOf("") }
@@ -48,6 +50,13 @@ fun LockOverlayScreen(
     var recoveryError by remember { mutableStateOf<String?>(null) }
 
     var activeLockMode by remember { mutableStateOf(settings.activeLockType) }
+
+    // Auto-prompt biometric on first load if enabled
+    LaunchedEffect(Unit) {
+        if (!showFakeError && (settings.isBiometricEnabled || activeLockMode == LockType.BIOMETRIC.name)) {
+            onTriggerBiometric?.invoke()
+        }
+    }
 
     if (showFakeError) {
         // Fake Decoy Crash Screen
@@ -143,14 +152,14 @@ fun LockOverlayScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onDismiss) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                    Icon(imageVector = AppIcons.Close, contentDescription = "Close", tint = Color.White)
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Lock,
+                        imageVector = AppIcons.Lock,
                         contentDescription = null,
                         tint = CyberCyanLight,
                         modifier = Modifier.size(20.dp)
@@ -163,7 +172,7 @@ fun LockOverlayScreen(
                     )
                 }
                 IconButton(onClick = { showRecoveryDialog = true }) {
-                    Icon(imageVector = Icons.Default.HelpOutline, contentDescription = "Recovery", tint = Color.White)
+                    Icon(imageVector = AppIcons.HelpOutline, contentDescription = "Recovery", tint = Color.White)
                 }
             }
 
@@ -179,9 +188,9 @@ fun LockOverlayScreen(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = when(appInfo.category) {
-                                "BANKING" -> Icons.Default.AccountBalance
-                                "SOCIAL" -> Icons.Default.ChatBubble
-                                else -> Icons.Default.Apps
+                                "BANKING" -> AppIcons.AccountBalance
+                                "SOCIAL" -> AppIcons.ChatBubble
+                                else -> AppIcons.Apps
                             },
                             contentDescription = appInfo.appName,
                             tint = CyberCyanLight,
@@ -285,8 +294,62 @@ fun LockOverlayScreen(
                             }
                         }
                     }
+                    LockType.BIOMETRIC.name -> {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = CyberCyan.copy(alpha = 0.15f),
+                                border = ButtonDefaults.outlinedButtonBorder,
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clickable {
+                                        if (onTriggerBiometric != null) {
+                                            onTriggerBiometric()
+                                        } else {
+                                            onSuccessUnlock()
+                                        }
+                                    }
+                                    .testTag("overlay_biometric_large_btn")
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = AppIcons.Fingerprint,
+                                        contentDescription = "Scan Fingerprint",
+                                        tint = CyberCyanLight,
+                                        modifier = Modifier.size(56.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Touch Fingerprint Sensor",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Tap icon or touch device biometric sensor",
+                                fontSize = 12.sp,
+                                color = TextSecondaryDark
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    activeLockMode = LockType.PIN.name
+                                }
+                            ) {
+                                Text("Use Backup PIN / Password")
+                            }
+                        }
+                    }
                     else -> {
-                        // PIN (default or Biometric fallback)
+                        // PIN (default)
                         PinPadView(
                             enteredPin = enteredPin,
                             isError = isError,
@@ -318,11 +381,13 @@ fun LockOverlayScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (settings.isBiometricEnabled) {
+                if (settings.isBiometricEnabled && activeLockMode != LockType.BIOMETRIC.name) {
                     TextButton(
                         onClick = {
-                            // Touch Biometric Quick Sensor Simulation
-                            onSuccessUnlock()
+                            activeLockMode = LockType.BIOMETRIC.name
+                            errorMessage = null
+                            isError = false
+                            onTriggerBiometric?.invoke()
                         },
                         modifier = Modifier.testTag("overlay_biometric_btn")
                     ) {
@@ -330,8 +395,8 @@ fun LockOverlayScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Icon(imageVector = Icons.Default.Fingerprint, contentDescription = null, tint = CyberCyanLight)
-                            Text("Biometric Sensor", color = CyberCyanLight)
+                            Icon(imageVector = AppIcons.Fingerprint, contentDescription = null, tint = CyberCyanLight)
+                            Text("Fingerprint", color = CyberCyanLight)
                         }
                     }
                 }
@@ -342,6 +407,7 @@ fun LockOverlayScreen(
                         activeLockMode = when(activeLockMode) {
                             LockType.PIN.name -> LockType.PATTERN.name
                             LockType.PATTERN.name -> LockType.PASSWORD.name
+                            LockType.PASSWORD.name -> if (settings.isBiometricEnabled) LockType.BIOMETRIC.name else LockType.PIN.name
                             else -> LockType.PIN.name
                         }
                         errorMessage = null

@@ -5,10 +5,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.NoAccounts
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.entities.IntruderLogEntity
+import com.example.ui.components.AppIcons
 import com.example.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -39,7 +36,7 @@ fun IntruderLogsScreen(
                 actions = {
                     if (logs.isNotEmpty()) {
                         IconButton(onClick = onClearLogs, modifier = Modifier.testTag("clear_intruder_logs_btn")) {
-                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Clear Logs", tint = AlertRed)
+                            Icon(imageVector = AppIcons.Delete, contentDescription = "Clear Logs", tint = AlertRed)
                         }
                     }
                 },
@@ -66,7 +63,7 @@ fun IntruderLogsScreen(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Default.Security,
+                                imageVector = AppIcons.Security,
                                 contentDescription = null,
                                 tint = ShieldGreen,
                                 modifier = Modifier.size(44.dp)
@@ -110,7 +107,7 @@ fun IntruderLogsScreen(
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
-                                            imageVector = Icons.Default.NoAccounts,
+                                            imageVector = AppIcons.NoAccounts,
                                             contentDescription = null,
                                             tint = AlertRed,
                                             modifier = Modifier.size(26.dp)

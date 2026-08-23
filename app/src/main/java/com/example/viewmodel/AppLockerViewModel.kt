@@ -240,6 +240,7 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
                 passwordCode = passwordCode,
                 securityQuestion = securityQuestion,
                 securityAnswer = securityAnswer,
+                isBiometricEnabled = if (lockType == com.example.data.entities.LockType.BIOMETRIC.name) true else _uiState.value.securitySettings.isBiometricEnabled,
                 isSetupCompleted = true
             )
             repository.updateSecuritySettings(updated)

@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.AppIcons
 import com.example.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,7 +78,7 @@ fun SettingsAndPermissionsScreen(
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
-                                        imageVector = if (isProtectionActive) Icons.Default.Security else Icons.Default.Shield,
+                                        imageVector = if (isProtectionActive) AppIcons.Security else AppIcons.Shield,
                                         contentDescription = null,
                                         tint = if (isProtectionActive) ShieldGreen else AlertRed,
                                         modifier = Modifier.size(24.dp)
@@ -142,7 +143,7 @@ fun SettingsAndPermissionsScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(imageVector = Icons.Default.DataUsage, contentDescription = null, tint = CyberCyanLight)
+                            Icon(imageVector = AppIcons.DataUsage, contentDescription = null, tint = CyberCyanLight)
                             Column {
                                 Text("Usage Access", color = Color.White, fontWeight = FontWeight.SemiBold)
                                 Text("Detects when locked apps open in system", fontSize = 12.sp, color = TextSecondaryDark)
@@ -188,7 +189,7 @@ fun SettingsAndPermissionsScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(imageVector = Icons.Default.Layers, contentDescription = null, tint = CyberCyanLight)
+                            Icon(imageVector = AppIcons.Layers, contentDescription = null, tint = CyberCyanLight)
                             Column {
                                 Text("Display Over Other Apps", color = Color.White, fontWeight = FontWeight.SemiBold)
                                 Text("Shows lock screen over protected apps", fontSize = 12.sp, color = TextSecondaryDark)
@@ -234,7 +235,7 @@ fun SettingsAndPermissionsScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(imageVector = Icons.Default.Accessibility, contentDescription = null, tint = CyberCyanLight)
+                            Icon(imageVector = AppIcons.Accessibility, contentDescription = null, tint = CyberCyanLight)
                             Column {
                                 Text("Accessibility Service (Instant Lock)", color = Color.White, fontWeight = FontWeight.SemiBold)
                                 Text("Instant 0ms window detection", fontSize = 12.sp, color = TextSecondaryDark)
@@ -291,13 +292,13 @@ fun SettingsAndPermissionsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Password, contentDescription = null, tint = CyberCyanLight)
+                        Icon(imageVector = AppIcons.Password, contentDescription = null, tint = CyberCyanLight)
                         Column {
                             Text("Change Lock Method & Code", color = Color.White, fontWeight = FontWeight.SemiBold)
                             Text("Update PIN, Pattern, Password & Biometrics", fontSize = 12.sp, color = TextSecondaryDark)
                         }
                     }
-                    Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = TextSecondaryDark)
+                    Icon(imageVector = AppIcons.ChevronRight, contentDescription = null, tint = TextSecondaryDark)
                 }
             }
 
@@ -316,13 +317,13 @@ fun SettingsAndPermissionsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Warning, contentDescription = null, tint = AlertRed)
+                        Icon(imageVector = AppIcons.Warning, contentDescription = null, tint = AlertRed)
                         Column {
                             Text("Intruder Security Logs", color = Color.White, fontWeight = FontWeight.SemiBold)
                             Text("View unauthorized unlock attempts", fontSize = 12.sp, color = TextSecondaryDark)
                         }
                     }
-                    Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = TextSecondaryDark)
+                    Icon(imageVector = AppIcons.ChevronRight, contentDescription = null, tint = TextSecondaryDark)
                 }
             }
         }

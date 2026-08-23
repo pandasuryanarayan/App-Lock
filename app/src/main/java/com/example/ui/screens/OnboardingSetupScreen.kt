@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.entities.LockType
+import com.example.ui.components.AppIcons
 import com.example.ui.components.PatternLockCanvas
 import com.example.ui.components.PinPadView
 import com.example.ui.theme.CyberCyan
@@ -88,7 +89,7 @@ fun OnboardingSetupScreen(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Default.Security,
+                            imageVector = AppIcons.Security,
                             contentDescription = "Security Shield",
                             tint = CyberCyanLight,
                             modifier = Modifier.size(48.dp)
@@ -147,10 +148,10 @@ fun OnboardingSetupScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         val lockOptions = listOf(
-                            LockType.PIN.name to ("4-Digit PIN" to Icons.Default.Pin),
-                            LockType.PATTERN.name to ("3x3 Pattern" to Icons.Default.Pattern),
-                            LockType.PASSWORD.name to ("Alphanumeric Password" to Icons.Default.Password),
-                            LockType.BIOMETRIC.name to ("Biometric (Fingerprint / Face)" to Icons.Default.Fingerprint)
+                            LockType.PIN.name to ("4-Digit PIN" to AppIcons.Pin),
+                            LockType.PATTERN.name to ("3x3 Pattern" to AppIcons.Pattern),
+                            LockType.PASSWORD.name to ("Alphanumeric Password" to AppIcons.Password),
+                            LockType.BIOMETRIC.name to ("Biometric (Fingerprint / Face)" to AppIcons.Fingerprint)
                         )
 
                         lockOptions.forEach { (type, pair) ->

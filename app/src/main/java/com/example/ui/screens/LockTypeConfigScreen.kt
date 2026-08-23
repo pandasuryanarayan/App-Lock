@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.entities.LockType
 import com.example.data.entities.SecuritySettingsEntity
+import com.example.ui.components.AppIcons
 import com.example.ui.components.PatternLockCanvas
 import com.example.ui.components.PinPadView
 import com.example.ui.theme.*
@@ -69,10 +70,10 @@ fun LockTypeConfigScreen(
 
             // Lock Type Selector Cards
             val lockTypes = listOf(
-                LockType.PIN.name to ("4-Digit PIN" to Icons.Default.Pin),
-                LockType.PATTERN.name to ("3x3 Pattern" to Icons.Default.Pattern),
-                LockType.PASSWORD.name to ("Password" to Icons.Default.Password),
-                LockType.BIOMETRIC.name to ("Biometric (Fingerprint/Face)" to Icons.Default.Fingerprint)
+                LockType.PIN.name to ("4-Digit PIN" to AppIcons.Pin),
+                LockType.PATTERN.name to ("3x3 Pattern" to AppIcons.Pattern),
+                LockType.PASSWORD.name to ("Password" to AppIcons.Password),
+                LockType.BIOMETRIC.name to ("Biometric (Fingerprint/Face)" to AppIcons.Fingerprint)
             )
 
             lockTypes.forEach { (type, info) ->
@@ -135,6 +136,91 @@ fun LockTypeConfigScreen(
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = CyberCyanLight)
                     )
+                }
+                LockType.BIOMETRIC.name -> {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val activity = context as? androidx.fragment.app.FragmentActivity
+                    var testStatus by remember { mutableStateOf<String?>(null) }
+
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = SlateSurfaceVariant.copy(alpha = 0.5f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(imageVector = AppIcons.Fingerprint, contentDescription = null, tint = CyberCyanLight)
+                                Text("Biometric Authentication Primary", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                            Text(
+                                "Locked apps will trigger your device fingerprint or face sensor. A backup PIN code is required below for fallback:",
+                                fontSize = 12.sp,
+                                color = TextSecondaryDark
+                            )
+
+                            OutlinedTextField(
+                                value = pinCode,
+                                onValueChange = { if (it.length <= 6) pinCode = it },
+                                label = { Text("Backup PIN Code (4-6 digits)") },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = CyberCyanLight)
+                            )
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.padding(top = 8.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        if (activity != null) {
+                                            val mgr = com.example.security.BiometricPromptManager(activity)
+                                            val status = mgr.checkBiometricStatus()
+                                            if (status == com.example.security.BiometricStatus.NOT_ENROLLED) {
+                                                testStatus = "No fingerprint enrolled in device settings"
+                                                com.example.security.BiometricPromptManager.openBiometricEnrollSettings(context)
+                                            } else if (status == com.example.security.BiometricStatus.NO_HARDWARE) {
+                                                testStatus = "No biometric hardware detected on this device"
+                                            } else {
+                                                mgr.showBiometricPrompt(
+                                                    title = "Test Biometric Sensor",
+                                                    subtitle = "Touch your sensor to verify"
+                                                ) { res ->
+                                                    testStatus = when (res) {
+                                                        is com.example.security.BiometricResult.AuthenticationSuccess -> "Biometric Sensor Verified Successfully!"
+                                                        is com.example.security.BiometricResult.AuthenticationFailed -> "Fingerprint not recognized"
+                                                        is com.example.security.BiometricResult.AuthenticationCancelled -> "Test cancelled"
+                                                        is com.example.security.BiometricResult.AuthenticationError -> "Error: ${res.error}"
+                                                        else -> "Biometric not ready"
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            testStatus = "Sensor test ready"
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
+                                    modifier = Modifier.testTag("test_biometric_btn")
+                                ) {
+                                    Text("Test Fingerprint Sensor")
+                                }
+                            }
+
+                            testStatus?.let { status ->
+                                Text(
+                                    text = status,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (status.contains("Successfully")) ShieldGreen else AlertRed
+                                )
+                            }
+                        }
+                    }
                 }
                 else -> {
                     OutlinedTextField(

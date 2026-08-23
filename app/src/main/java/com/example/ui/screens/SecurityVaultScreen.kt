@@ -4,11 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.entities.VaultItemEntity
+import com.example.ui.components.AppIcons
 import com.example.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,7 +43,7 @@ fun SecurityVaultScreen(
                 containerColor = CyberCyan,
                 modifier = Modifier.testTag("add_vault_item_fab")
             ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Secret Note", tint = Color.White)
+                Icon(imageVector = AppIcons.Add, contentDescription = "Add Secret Note", tint = Color.White)
             }
         }
     ) { padding ->
@@ -64,7 +60,7 @@ fun SecurityVaultScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Lock,
+                        imageVector = AppIcons.Lock,
                         contentDescription = null,
                         tint = CyberCyanLight,
                         modifier = Modifier.size(64.dp)
@@ -105,7 +101,7 @@ fun SecurityVaultScreen(
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.VpnKey,
+                                        imageVector = AppIcons.VpnKey,
                                         contentDescription = null,
                                         tint = CyberCyanLight
                                     )
@@ -127,7 +123,7 @@ fun SecurityVaultScreen(
                                     onClick = { onDeleteVaultItem(item.id) },
                                     modifier = Modifier.testTag("delete_vault_item_${item.id}")
                                 ) {
-                                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = AlertRed)
+                                    Icon(imageVector = AppIcons.Delete, contentDescription = "Delete", tint = AlertRed)
                                 }
                             }
                         }

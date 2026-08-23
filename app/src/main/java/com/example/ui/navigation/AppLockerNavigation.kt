@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import com.example.ui.components.AppIcons
 import com.example.ui.screens.*
 import com.example.ui.theme.CyberCyanLight
 import com.example.ui.theme.ObsidianDark
@@ -16,10 +17,10 @@ import com.example.ui.theme.SlateSurface
 import com.example.viewmodel.AppLockerViewModel
 
 enum class MainTab(val title: String, val icon: ImageVector, val tag: String) {
-    APPS("App Locks", Icons.Default.Apps, "nav_tab_apps"),
-    LOCK_METHOD("Security", Icons.Default.Password, "nav_tab_security"),
-    VAULT("Vault", Icons.Default.VpnKey, "nav_tab_vault"),
-    SETTINGS("Settings", Icons.Default.Settings, "nav_tab_settings")
+    APPS("App Locks", AppIcons.Apps, "nav_tab_apps"),
+    LOCK_METHOD("Security", AppIcons.Password, "nav_tab_security"),
+    VAULT("Vault", AppIcons.VpnKey, "nav_tab_vault"),
+    SETTINGS("Settings", AppIcons.Settings, "nav_tab_settings")
 }
 
 @Composable
@@ -83,6 +84,9 @@ fun AppLockerMainNavigation(
 
     // Interactive Lock Overlay Screen (When testing overlay on a specific app inside app)
     uiState.activeSimulationPackage?.let { simApp ->
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val activity = context as? androidx.fragment.app.FragmentActivity
+
         LockOverlayScreen(
             appInfo = simApp,
             settings = uiState.securitySettings,
@@ -95,6 +99,30 @@ fun AppLockerMainNavigation(
             },
             onDismiss = {
                 viewModel.closeLockSimulation()
+            },
+            onTriggerBiometric = {
+                if (activity != null) {
+                    val promptManager = com.example.security.BiometricPromptManager(activity)
+                    promptManager.showBiometricPrompt(
+                        title = "Unlock ${simApp.appName}",
+                        subtitle = "Touch sensor or scan face to unlock",
+                        negativeButtonText = "Use Backup PIN"
+                    ) { result ->
+                        when (result) {
+                            is com.example.security.BiometricResult.AuthenticationSuccess -> {
+                                viewModel.unlockSimulationSuccess()
+                                viewModel.closeLockSimulation()
+                            }
+                            is com.example.security.BiometricResult.AuthenticationFailed -> {
+                                viewModel.recordFailedUnlockAttempt("Biometric mismatch")
+                            }
+                            else -> Unit
+                        }
+                    }
+                } else {
+                    viewModel.unlockSimulationSuccess()
+                    viewModel.closeLockSimulation()
+                }
             }
         )
         return

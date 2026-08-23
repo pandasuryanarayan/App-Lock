@@ -33,11 +33,14 @@ class LockOverlayActivity : FragmentActivity() {
     private var targetAppName: String = ""
     private var appItemInfo: AppItemInfo = AppItemInfo("unknown", "Protected Application", "SYSTEM", true, true)
     private var securitySettings: SecuritySettingsEntity = SecuritySettingsEntity()
+    private var biometricPromptManager: com.example.security.BiometricPromptManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppLockStateManager.isOverlayShowing = true
         enableEdgeToEdge()
+
+        biometricPromptManager = com.example.security.BiometricPromptManager(this)
 
         targetPackageName = intent.getStringExtra(EXTRA_PACKAGE_NAME) ?: ""
         targetAppName = intent.getStringExtra(EXTRA_APP_NAME) ?: ""
@@ -70,8 +73,42 @@ class LockOverlayActivity : FragmentActivity() {
                         },
                         onDismiss = {
                             sendUserToHomeScreen()
+                        },
+                        onTriggerBiometric = {
+                            triggerBiometricPrompt()
                         }
                     )
+                }
+            }
+
+            // If biometric is enabled or active lock type is BIOMETRIC, trigger biometric check on start
+            if (!securitySettings.isFakeErrorEnabled &&
+                (securitySettings.isBiometricEnabled || securitySettings.activeLockType == com.example.data.entities.LockType.BIOMETRIC.name)
+            ) {
+                triggerBiometricPrompt()
+            }
+        }
+    }
+
+    private fun triggerBiometricPrompt() {
+        val manager = biometricPromptManager ?: com.example.security.BiometricPromptManager(this).also {
+            biometricPromptManager = it
+        }
+
+        manager.showBiometricPrompt(
+            title = "Unlock ${appItemInfo.appName}",
+            subtitle = "Touch sensor or scan face to unlock",
+            negativeButtonText = "Use Backup PIN/Pass"
+        ) { result ->
+            when (result) {
+                is com.example.security.BiometricResult.AuthenticationSuccess -> {
+                    handleSuccessUnlock()
+                }
+                is com.example.security.BiometricResult.AuthenticationFailed -> {
+                    handleFailedAttempt("Biometric mismatch")
+                }
+                else -> {
+                    // Cancelled or fallback to PIN/Pass pad
                 }
             }
         }

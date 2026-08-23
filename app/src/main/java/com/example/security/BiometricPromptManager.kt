@@ -1,7 +1,9 @@
 package com.example.security
 
 import android.content.Context
+import android.content.Intent
 import android.os.Build
+import android.provider.Settings
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -28,16 +30,43 @@ class BiometricPromptManager(private val activity: FragmentActivity) {
             BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> BiometricStatus.NO_HARDWARE
             BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> BiometricStatus.HARDWARE_UNAVAILABLE
             BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> BiometricStatus.NOT_ENROLLED
-            else -> BiometricStatus.UNAVAILABLE
+            else -> {
+                // Fallback check with STRONG only
+                when (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)) {
+                    BiometricManager.BIOMETRIC_SUCCESS -> BiometricStatus.AVAILABLE
+                    BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> BiometricStatus.NO_HARDWARE
+                    BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> BiometricStatus.HARDWARE_UNAVAILABLE
+                    BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> BiometricStatus.NOT_ENROLLED
+                    else -> BiometricStatus.UNAVAILABLE
+                }
+            }
         }
     }
 
+    fun isBiometricReady(): Boolean {
+        return checkBiometricStatus() == BiometricStatus.AVAILABLE
+    }
+
     fun showBiometricPrompt(
-        title: String = "App Locker Biometric Check",
+        title: String = "App Locker Security",
         subtitle: String = "Scan fingerprint or face to unlock",
         negativeButtonText: String = "Use PIN / Password",
         onResult: (BiometricResult) -> Unit
     ) {
+        val status = checkBiometricStatus()
+        if (status == BiometricStatus.NO_HARDWARE) {
+            onResult(BiometricResult.HardwareUnavailable)
+            return
+        }
+        if (status == BiometricStatus.NOT_ENROLLED) {
+            onResult(BiometricResult.AuthenticationError("No biometric enrolled. Please set up fingerprint in Settings."))
+            return
+        }
+        if (status == BiometricStatus.HARDWARE_UNAVAILABLE) {
+            onResult(BiometricResult.HardwareUnavailable)
+            return
+        }
+
         val executor = ContextCompat.getMainExecutor(activity)
         val callback = object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
@@ -60,18 +89,60 @@ class BiometricPromptManager(private val activity: FragmentActivity) {
             }
         }
 
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(title)
-            .setSubtitle(subtitle)
-            .setNegativeButtonText(negativeButtonText)
-            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK)
-            .build()
-
         try {
+            val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                .setTitle(title)
+                .setSubtitle(subtitle)
+                .setNegativeButtonText(negativeButtonText)
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK)
+                .build()
+
             val biometricPrompt = BiometricPrompt(activity, executor, callback)
             biometricPrompt.authenticate(promptInfo)
         } catch (e: Exception) {
-            onResult(BiometricResult.AuthenticationError(e.localizedMessage ?: "Biometric error"))
+            try {
+                // Secondary fallback prompt without specifying authenticators
+                val fallbackPromptInfo = BiometricPrompt.PromptInfo.Builder()
+                    .setTitle(title)
+                    .setSubtitle(subtitle)
+                    .setNegativeButtonText(negativeButtonText)
+                    .build()
+                val biometricPrompt = BiometricPrompt(activity, executor, callback)
+                biometricPrompt.authenticate(fallbackPromptInfo)
+            } catch (e2: Exception) {
+                onResult(BiometricResult.AuthenticationError(e2.localizedMessage ?: "Biometric error"))
+            }
+        }
+    }
+
+    companion object {
+        fun openBiometricEnrollSettings(context: Context) {
+            try {
+                val enrollIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    Intent(Settings.ACTION_BIOMETRIC_ENROLL).apply {
+                        putExtra(
+                            Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                            BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK
+                        )
+                    }
+                } else {
+                    Intent(Settings.ACTION_SECURITY_SETTINGS)
+                }
+                enrollIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(enrollIntent)
+            } catch (e: Exception) {
+                try {
+                    val fallbackIntent = Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(fallbackIntent)
+                } catch (e2: Exception) {
+                    val appSettingsIntent = Intent(Settings.ACTION_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(appSettingsIntent)
+                }
+            }
         }
     }
 }

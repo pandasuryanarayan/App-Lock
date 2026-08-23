@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.security.AppItemInfo
+import com.example.ui.components.AppIcons
 import com.example.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,7 +82,7 @@ fun DashboardAppsScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Security,
+                            imageVector = AppIcons.Security,
                             contentDescription = null,
                             tint = CyberCyanLight
                         )
@@ -221,7 +222,7 @@ fun DashboardAppsScreen(
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
-                                        imageVector = if (lockedCount > 0) Icons.Default.Shield else Icons.Default.GppMaybe,
+                                        imageVector = if (lockedCount > 0) AppIcons.Shield else AppIcons.GppMaybe,
                                         contentDescription = null,
                                         tint = Color.White,
                                         modifier = Modifier.size(22.dp)
@@ -251,7 +252,7 @@ fun DashboardAppsScreen(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.AccountBalance,
+                                        imageVector = AppIcons.AccountBalance,
                                         contentDescription = null,
                                         modifier = Modifier.size(15.dp)
                                     )
@@ -357,7 +358,7 @@ fun DashboardAppsScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.SearchOff,
+                            imageVector = AppIcons.SearchOff,
                             contentDescription = null,
                             tint = TextSecondaryDark,
                             modifier = Modifier.size(48.dp)
@@ -415,10 +416,10 @@ fun DashboardAppsScreen(
                                         Box(contentAlignment = Alignment.Center) {
                                             Icon(
                                                 imageVector = when(app.category) {
-                                                    "BANKING" -> Icons.Default.AccountBalance
-                                                    "SOCIAL" -> Icons.Default.ChatBubble
-                                                    "SYSTEM" -> Icons.Default.Settings
-                                                    else -> Icons.Default.Android
+                                                    "BANKING" -> AppIcons.AccountBalance
+                                                    "SOCIAL" -> AppIcons.ChatBubble
+                                                    "SYSTEM" -> AppIcons.Settings
+                                                    else -> AppIcons.Android
                                                 },
                                                 contentDescription = app.appName,
                                                 tint = when(app.category) {
@@ -477,7 +478,7 @@ fun DashboardAppsScreen(
                                         modifier = Modifier.testTag("launch_app_btn_${app.packageName}")
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Launch,
+                                            imageVector = AppIcons.Launch,
                                             contentDescription = "Launch App",
                                             tint = if (isLocked) CyberCyanLight else TextSecondaryDark,
                                             modifier = Modifier.size(20.dp)

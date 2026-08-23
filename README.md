@@ -104,4 +104,4 @@ App Locker requires the following Android system permissions to protect applicat
 
 ## 📄 License
 
-This project is licensed under the [Apache License 2.0](LICENSE).
+This project is licensed under the [MIT License](LICENSE.md).

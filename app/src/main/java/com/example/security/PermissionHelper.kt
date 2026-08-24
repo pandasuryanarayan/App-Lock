@@ -17,22 +17,34 @@ object PermissionHelper {
 
     fun hasUsageAccess(context: Context): Boolean {
         return try {
-            val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+            val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
             val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                appOps.unsafeCheckOpNoThrow(
+                appOps?.unsafeCheckOpNoThrow(
                     AppOpsManager.OPSTR_GET_USAGE_STATS,
                     Process.myUid(),
                     context.packageName
                 )
             } else {
                 @Suppress("DEPRECATION")
-                appOps.checkOpNoThrow(
+                appOps?.checkOpNoThrow(
                     AppOpsManager.OPSTR_GET_USAGE_STATS,
                     Process.myUid(),
                     context.packageName
                 )
             }
-            mode == AppOpsManager.MODE_ALLOWED
+            if (mode == AppOpsManager.MODE_ALLOWED) {
+                return true
+            }
+
+            // Fallback check by querying usage stats directly
+            val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? android.app.usage.UsageStatsManager
+            val time = System.currentTimeMillis()
+            val stats = usageStatsManager?.queryUsageStats(
+                android.app.usage.UsageStatsManager.INTERVAL_DAILY,
+                time - 1000 * 60 * 60,
+                time
+            )
+            !stats.isNullOrEmpty()
         } catch (e: Exception) {
             false
         }
@@ -40,20 +52,33 @@ object PermissionHelper {
 
     fun openUsageAccessSettings(context: Context) {
         try {
+            // Android Usage Access settings screen does not support package URI matching
             val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                data = Uri.fromParts("package", context.packageName, null)
             }
             context.startActivity(intent)
         } catch (e: Exception) {
             try {
-                val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
                 context.startActivity(intent)
             } catch (ex: Exception) {
-                Toast.makeText(context, "Could not open Usage Access settings", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Please open Settings > Apps > Special app access > Usage access", Toast.LENGTH_LONG).show()
             }
+        }
+    }
+
+    fun openAppDetailsSettings(context: Context) {
+        try {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Could not open App Info settings", Toast.LENGTH_SHORT).show()
         }
     }
 

@@ -783,6 +783,8 @@ object AppIcons {
         }.build()
     }
 
+    val Info: ImageVector by lazy { HelpOutline }
+
     // NoAccounts Icon
     val NoAccounts: ImageVector by lazy {
         ImageVector.Builder(

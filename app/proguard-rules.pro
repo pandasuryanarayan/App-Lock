@@ -11,3 +11,7 @@
 -keep interface com.example.data.dao.** { *; }
 -keep class com.example.data.db.** { *; }
 
+# Keep security services, receivers and managers
+-keep class com.example.security.** { *; }
+-keep class com.example.ui.screens.LockOverlayActivity { *; }
+

@@ -207,6 +207,7 @@ fun AppLockerMainNavigation(
                         onGrantUsagePermission = viewModel::requestUsageAccessPermission,
                         onGrantOverlayPermission = viewModel::requestOverlayPermission,
                         onGrantAccessibilityPermission = viewModel::requestAccessibilityPermission,
+                        onOpenAppDetails = viewModel::openAppDetailsSettings,
                         onToggleProtectionService = viewModel::toggleProtectionService,
                         onNavigateToLockConfig = { currentTab = MainTab.LOCK_METHOD },
                         onNavigateToIntruderLogs = { showIntruderLogs = true }

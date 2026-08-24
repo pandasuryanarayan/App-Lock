@@ -31,6 +31,7 @@ fun SettingsAndPermissionsScreen(
     onGrantUsagePermission: () -> Unit,
     onGrantOverlayPermission: () -> Unit,
     onGrantAccessibilityPermission: () -> Unit,
+    onOpenAppDetails: () -> Unit,
     onToggleProtectionService: (Boolean) -> Unit,
     onNavigateToLockConfig: () -> Unit,
     onNavigateToIntruderLogs: () -> Unit
@@ -264,6 +265,53 @@ fun SettingsAndPermissionsScreen(
                             ) {
                                 Text("ENABLE", fontSize = 11.sp, color = CyberCyanLight)
                             }
+                        }
+                    }
+                }
+            }
+
+            // Troubleshooting & Sideloaded APK Permission Guide
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = SlateSurfaceVariant.copy(alpha = 0.5f)),
+                modifier = Modifier.fillMaxWidth().testTag("troubleshoot_card")
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(imageVector = AppIcons.Info, contentDescription = null, tint = CyberCyanLight)
+                        Text(
+                            text = "Permission Setup & Android 13+ Guide",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    Text(
+                        text = "• Usage Access: In Android Settings, scroll down and find 'App Locker', then tap to toggle 'Allow usage tracking' ON.\n\n" +
+                                "• If Settings are Greyed Out / 'Restricted Setting': On Android 13+, sideloaded APKs have sensitive toggles locked. Open App Info, tap the 3 dots in the top right corner, tap 'Allow restricted settings', enter your screen lock, and return here to enable permissions.",
+                        fontSize = 12.sp,
+                        color = TextSecondaryDark,
+                        lineHeight = 17.sp
+                    )
+
+                    OutlinedButton(
+                        onClick = onOpenAppDetails,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("open_app_info_btn")
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(imageVector = AppIcons.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Text("Open App Info (Unblock Restricted Settings)", fontSize = 12.sp, color = CyberCyanLight)
                         }
                     }
                 }

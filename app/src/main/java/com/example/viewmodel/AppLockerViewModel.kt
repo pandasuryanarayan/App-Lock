@@ -146,6 +146,10 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
         PermissionHelper.openAccessibilitySettings(getApplication())
     }
 
+    fun openAppDetailsSettings() {
+        PermissionHelper.openAppDetailsSettings(getApplication())
+    }
+
     fun toggleProtectionService(enable: Boolean) {
         val app = getApplication<Application>()
         if (enable) {

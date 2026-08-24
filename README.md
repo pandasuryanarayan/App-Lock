@@ -57,6 +57,13 @@ App Locker requires the following Android system permissions to protect applicat
 | `POST_NOTIFICATIONS` | Displays the active protection foreground service notification. |
 | `VIBRATE` | Provides haptic feedback during unlock interactions. |
 
+> **Note for Sideloaded Release APKs (Android 13+)**:
+> When manually installing an APK from GitHub or storage, Android 13+ may restrict Accessibility and Special permissions by default ("Restricted setting"). To grant them:
+> 1. Go to **Settings > Apps > App Locker** (or tap **Open App Info** inside the app's Settings tab).
+> 2. Tap the **3 vertical dots (⋮)** in the top-right corner.
+> 3. Select **Allow restricted settings** and authenticate with your lock screen.
+> 4. Return to App Locker to toggle **Usage Access**, **Display Over Other Apps**, and **Accessibility**.
+
 ---
 
 ## 🚀 Getting Started

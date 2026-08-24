@@ -71,16 +71,16 @@ App Locker requires the following Android system permissions to protect applicat
 ### Prerequisites
 
 - **Android Studio**: Android Studio Ladybug / Meerkat (or newer)
-- **Minimum SDK**: Android 8.0 (API Level 26)
-- **Target SDK**: Android 14 / 15 (API Level 35)
+- **Minimum SDK**: Android 7.0 (API Level 24)
+- **Target SDK**: Android 16 (API Level 36)
 - **JDK**: Java 17 or Java 21
 
 ### Building & Running
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/your-username/app-locker.git
-   cd app-locker
+   git clone https://github.com/pandasuryanarayan/App-Lock.git
+   cd App-Lock
    ```
 
 2. **Open in Android Studio**:
@@ -99,6 +99,19 @@ App Locker requires the following Android system permissions to protect applicat
      ```bash
      ./gradlew installDebug
      ```
+
+5. **Build Signed Release APK** (optional):
+   The release build is signed with an upload key stored at `my-upload-key.jks` (not tracked in git — see below). Provide the signing credentials via environment variables to avoid hardcoding secrets:
+   ```bash
+   export KEYSTORE_PATH="$PWD/my-upload-key.jks"
+   export STORE_PASSWORD="your-store-password"
+   export KEY_PASSWORD="your-key-password"
+   ./gradlew assembleRelease
+   ```
+   The signed APK will be located at:
+   `app/build/outputs/apk/release/app-release.apk`
+
+   > **⚠️ Keep your signing key safe**: The `my-upload-key.jks` file is excluded from git (see `.gitignore`). Back it up securely — if you lose it, you will **not** be able to update your app on the Play Store under the same identity.
 
 ---
 

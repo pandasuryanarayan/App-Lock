@@ -2,16 +2,25 @@
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
 
+# Optimization and shrinking rules
+-repackageclasses ''
+-allowaccessmodification
+-dontwarn **
+
 # Room database rules
 -keep class * extends androidx.room.RoomDatabase
 -dontwarn androidx.room.paging.**
 
-# Keep entities and DAOs
+# Keep Room entities and DAOs
+-keep @androidx.room.Entity class * { *; }
+-keep @androidx.room.Dao interface * { *; }
+-keep class * extends androidx.room.RoomDatabase { *; }
 -keep class com.example.data.entities.** { *; }
--keep interface com.example.data.dao.** { *; }
--keep class com.example.data.db.** { *; }
 
-# Keep security services, receivers and managers
--keep class com.example.security.** { *; }
--keep class com.example.ui.screens.LockOverlayActivity { *; }
+# Strip verbose logging
+-assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
+    public static int v(...);
+    public static int d(...);
+}
 

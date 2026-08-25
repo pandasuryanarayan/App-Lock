@@ -6,7 +6,7 @@ plugins {
   alias(libs.plugins.google.devtools.ksp)
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
-  alias(libs.plugins.google.services)
+  // alias(libs.plugins.google.services)
 }
 
 android {
@@ -23,13 +23,25 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
+  androidResources {
+    localeFilters += listOf("en")
+  }
+
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+      val keystorePath = System.getenv("KEYSTORE_PATH")
+      val keystoreFile = if (keystorePath != null) file(keystorePath) else null
+      if (keystoreFile != null && keystoreFile.exists()) {
+        storeFile = keystoreFile
+        storePassword = System.getenv("STORE_PASSWORD")
+        keyAlias = "upload"
+        keyPassword = System.getenv("KEY_PASSWORD")
+      } else {
+        storeFile = file("${rootDir}/debug.keystore")
+        storePassword = "android"
+        keyAlias = "androiddebugkey"
+        keyPassword = "android"
+      }
     }
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
@@ -66,6 +78,21 @@ android {
     includeInApk = false
     includeInBundle = true
   }
+  packaging {
+    resources {
+      excludes += listOf(
+        "/META-INF/{AL2.0,LGPL2.1}",
+        "META-INF/*.version",
+        "META-INF/LICENSE*",
+        "META-INF/NOTICE*",
+        "META-INF/*.txt",
+        "META-INF/INDEX.LIST",
+        "META-INF/DEPENDENCIES",
+        "**/*.kotlin_builtins",
+        "**/*.kotlin_metadata"
+      )
+    }
+  }
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
@@ -76,7 +103,7 @@ secrets {
   ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
 }
 
-googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
+// googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
 
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
@@ -94,13 +121,13 @@ dependencies {
   implementation(libs.androidx.compose.material3)
   implementation(libs.androidx.compose.ui)
   implementation(libs.androidx.compose.ui.graphics)
-  implementation(libs.androidx.compose.ui.tooling.preview)
+  // implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.core.ktx)
   // implementation(libs.androidx.datastore.preferences)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
-  implementation(libs.androidx.navigation.compose)
+  // implementation(libs.androidx.navigation.compose)
   implementation(libs.androidx.biometric)
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
@@ -138,8 +165,9 @@ dependencies {
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.runner)
-  debugImplementation(libs.androidx.compose.ui.test.manifest)
-  debugImplementation(libs.androidx.compose.ui.tooling)
+  // debugImplementation(libs.androidx.compose.ui.test.manifest)
+  // debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.androidx.room.compiler)
   // "ksp"(libs.moshi.kotlin.codegen)
 }
+

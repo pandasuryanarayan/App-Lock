@@ -113,38 +113,6 @@ object PermissionHelper {
         }
     }
 
-    fun isAccessibilityServiceEnabled(context: Context): Boolean {
-        val expectedComponentName = ComponentName(context, AppLockAccessibilityService::class.java).flattenToString()
-        val enabledServices = Settings.Secure.getString(
-            context.contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-
-        val colonSplitter = TextUtils.SimpleStringSplitter(':')
-        colonSplitter.setString(enabledServices)
-
-        while (colonSplitter.hasNext()) {
-            val componentNameString = colonSplitter.next()
-            if (componentNameString.equals(expectedComponentName, ignoreCase = true) ||
-                componentNameString.contains(context.packageName)
-            ) {
-                return true
-            }
-        }
-        return false
-    }
-
-    fun openAccessibilitySettings(context: Context) {
-        try {
-            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            Toast.makeText(context, "Could not open Accessibility settings", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     fun hasNotificationPermission(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(

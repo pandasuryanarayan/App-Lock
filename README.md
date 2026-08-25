@@ -11,9 +11,8 @@ A modern, high-performance Android App Locker application built with **Jetpack C
   - **3x3 Pattern Lock**: Smooth gesture-based pattern connector canvas.
   - **Alphanumeric Password**: Full password protection with visibility toggles.
   - **Biometric Authentication**: Seamless Android `BiometricPrompt` integration (Fingerprint / Face Unlock).
-- ⚡ **Dual Detection Engine**:
-  - **Accessibility Service**: Instant 0ms window state change detection for real-time app locking.
-  - **UsageStats Fallback**: Polling-based fallback detection via `UsageStatsManager` with battery-optimized intervals.
+- ⚡ **Real-Time Detection Engine**:
+  - **Foreground Monitoring**: High-precision detection via Android `UsageStatsManager` with battery-optimized polling.
 - 🖼️ **Non-Intrusive Overlay Screen**:
   - System Alert Window (`SYSTEM_ALERT_WINDOW`) overlay presenting authentication without killing background processes.
   - Quick-dismiss and emergency recovery questions.
@@ -38,9 +37,9 @@ A modern, high-performance Android App Locker application built with **Jetpack C
 - **Local Persistence**: [Room Database](https://developer.android.com/training/data-storage/room) with KSP
 - **Biometrics**: `androidx.biometric:biometric-ktx`
 - **Security & Services**:
-  - `AccessibilityService` for zero-latency foreground app switching
-  - `UsageStatsManager` & `AppOpsManager` for app usage monitoring
+  - `UsageStatsManager` & `AppOpsManager` for foreground app usage monitoring
   - `WindowManager` & `SYSTEM_ALERT_WINDOW` for custom overlay rendering
+  - `ForegroundService` with `specialUse` type for persistent real-time monitoring
 
 ---
 
@@ -52,17 +51,16 @@ App Locker requires the following Android system permissions to protect applicat
 | :--- | :--- |
 | `PACKAGE_USAGE_STATS` | Detects when protected apps are launched in the foreground. |
 | `SYSTEM_ALERT_WINDOW` | Displays the security lock overlay above locked applications. |
-| `ACCESSIBILITY_SERVICE` | Enables instant (0ms) app switch detection for maximum security. |
 | `USE_BIOMETRIC` | Enables fingerprint and biometric unlock prompts. |
 | `POST_NOTIFICATIONS` | Displays the active protection foreground service notification. |
 | `VIBRATE` | Provides haptic feedback during unlock interactions. |
 
 > **Note for Sideloaded Release APKs (Android 13+)**:
-> When manually installing an APK from GitHub or storage, Android 13+ may restrict Accessibility and Special permissions by default ("Restricted setting"). To grant them:
+> When manually installing an APK from GitHub or storage, Android 13+ may restrict Special App Access permissions by default ("Restricted setting"). To grant them:
 > 1. Go to **Settings > Apps > App Locker** (or tap **Open App Info** inside the app's Settings tab).
 > 2. Tap the **3 vertical dots (⋮)** in the top-right corner.
 > 3. Select **Allow restricted settings** and authenticate with your lock screen.
-> 4. Return to App Locker to toggle **Usage Access**, **Display Over Other Apps**, and **Accessibility**.
+> 4. Return to App Locker to toggle **Usage Access** and **Display Over Other Apps**.
 
 ---
 

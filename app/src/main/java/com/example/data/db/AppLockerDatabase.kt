@@ -17,7 +17,7 @@ import com.example.data.entities.VaultItemEntity
         IntruderLogEntity::class,
         VaultItemEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppLockerDatabase : RoomDatabase() {

@@ -28,7 +28,6 @@ data class AppLockerUiState(
     val simulationUnlocked: Boolean = false,
     val isOverlayPermissionGranted: Boolean = false,
     val isUsagePermissionGranted: Boolean = false,
-    val isAccessibilityGranted: Boolean = false,
     val isProtectionActive: Boolean = false,
     val snackbarMessage: String? = null
 )
@@ -114,13 +113,11 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
         val app = getApplication<Application>()
         val hasUsage = PermissionHelper.hasUsageAccess(app)
         val hasOverlay = PermissionHelper.hasOverlayPermission(app)
-        val hasAccess = PermissionHelper.isAccessibilityServiceEnabled(app)
 
         _uiState.update {
             it.copy(
                 isUsagePermissionGranted = hasUsage,
-                isOverlayPermissionGranted = hasOverlay,
-                isAccessibilityGranted = hasAccess
+                isOverlayPermissionGranted = hasOverlay
             )
         }
     }
@@ -140,10 +137,6 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun requestOverlayPermission() {
         PermissionHelper.openOverlaySettings(getApplication())
-    }
-
-    fun requestAccessibilityPermission() {
-        PermissionHelper.openAccessibilitySettings(getApplication())
     }
 
     fun openAppDetailsSettings() {

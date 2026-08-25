@@ -57,19 +57,6 @@
                 android:value="App security monitor to protect user selected applications" />
         </service>
 
-        <!-- Accessibility Service for Instant Window Detection -->
-        <service
-            android:name=".security.AppLockAccessibilityService"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_service_config" />
-        </service>
-
         <!-- Broadcast Receiver for Device Boot -->
         <receiver
             android:name=".security.BootReceiver"

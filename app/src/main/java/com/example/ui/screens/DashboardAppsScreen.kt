@@ -34,7 +34,6 @@ fun DashboardAppsScreen(
     selectedCategory: String,
     isUsagePermissionGranted: Boolean,
     isOverlayPermissionGranted: Boolean,
-    isAccessibilityGranted: Boolean,
     isProtectionActive: Boolean,
     onSearchQueryChange: (String) -> Unit,
     onCategorySelect: (String) -> Unit,
@@ -45,8 +44,7 @@ fun DashboardAppsScreen(
     onTestLockOverlay: (AppItemInfo) -> Unit,
     onLaunchRealApp: (AppItemInfo) -> Unit,
     onGrantUsagePermission: () -> Unit,
-    onGrantOverlayPermission: () -> Unit,
-    onGrantAccessibilityPermission: () -> Unit
+    onGrantOverlayPermission: () -> Unit
 ) {
     val lockedCount = lockedAppsMap.count { it.value }
     val totalApps = installedApps.size

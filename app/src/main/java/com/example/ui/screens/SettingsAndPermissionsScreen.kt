@@ -26,11 +26,9 @@ import com.example.ui.theme.*
 fun SettingsAndPermissionsScreen(
     isUsagePermissionGranted: Boolean,
     isOverlayPermissionGranted: Boolean,
-    isAccessibilityGranted: Boolean,
     isProtectionActive: Boolean,
     onGrantUsagePermission: () -> Unit,
     onGrantOverlayPermission: () -> Unit,
-    onGrantAccessibilityPermission: () -> Unit,
     onOpenAppDetails: () -> Unit,
     onToggleProtectionService: (Boolean) -> Unit,
     onNavigateToLockConfig: () -> Unit,
@@ -219,51 +217,6 @@ fun SettingsAndPermissionsScreen(
                                 modifier = Modifier.testTag("settings_grant_overlay_btn")
                             ) {
                                 Text("GRANT", fontSize = 11.sp)
-                            }
-                        }
-                    }
-
-                    Divider(color = SlateSurfaceVariant)
-
-                    // Accessibility Service
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(imageVector = AppIcons.Accessibility, contentDescription = null, tint = CyberCyanLight)
-                            Column {
-                                Text("Accessibility Service (Instant Lock)", color = Color.White, fontWeight = FontWeight.SemiBold)
-                                Text("Instant 0ms window detection", fontSize = 12.sp, color = TextSecondaryDark)
-                            }
-                        }
-
-                        if (isAccessibilityGranted) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = ShieldGreen.copy(alpha = 0.2f)
-                            ) {
-                                Text(
-                                    text = "ACTIVE",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = ShieldGreen,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = onGrantAccessibilityPermission,
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                modifier = Modifier.testTag("settings_grant_access_btn")
-                            ) {
-                                Text("ENABLE", fontSize = 11.sp, color = CyberCyanLight)
                             }
                         }
                     }

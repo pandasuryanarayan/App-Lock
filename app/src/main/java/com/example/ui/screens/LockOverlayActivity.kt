@@ -82,9 +82,7 @@ class LockOverlayActivity : FragmentActivity() {
             }
 
             // If biometric is enabled or active lock type is BIOMETRIC, trigger biometric check on start
-            if (!securitySettings.isFakeErrorEnabled &&
-                (securitySettings.isBiometricEnabled || securitySettings.activeLockType == com.example.data.entities.LockType.BIOMETRIC.name)
-            ) {
+            if (securitySettings.isBiometricEnabled || securitySettings.activeLockType == com.example.data.entities.LockType.BIOMETRIC.name) {
                 triggerBiometricPrompt()
             }
         }

@@ -21,7 +21,6 @@ data class SecuritySettingsEntity(
     val securityQuestion: String = "What is your favorite color?",
     val securityAnswer: String = "Blue",
     val isStealthPattern: Boolean = false, // Hide pattern trail when drawing
-    val isFakeErrorEnabled: Boolean = false, // Show fake crash dialog before lock screen
     val relockPolicy: String = "IMMEDIATE", // "IMMEDIATE", "SCREEN_OFF", "AFTER_1MIN"
     val vibrationEnabled: Boolean = true,
     val intruderSelfieEnabled: Boolean = true,

@@ -36,7 +36,6 @@ fun LockTypeConfigScreen(
 
     var isBiometricEnabled by remember { mutableStateOf(settings.isBiometricEnabled) }
     var isStealthPattern by remember { mutableStateOf(settings.isStealthPattern) }
-    var isFakeErrorEnabled by remember { mutableStateOf(settings.isFakeErrorEnabled) }
     var vibrationEnabled by remember { mutableStateOf(settings.vibrationEnabled) }
 
     var question by remember { mutableStateOf(settings.securityQuestion) }
@@ -281,24 +280,6 @@ fun LockTypeConfigScreen(
                             onCheckedChange = { isStealthPattern = it }
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Fake Error Decoy Screen", color = Color.White, fontWeight = FontWeight.SemiBold)
-                            Text("Show 'App keeps stopping' fake crash message first", fontSize = 12.sp, color = TextSecondaryDark)
-                        }
-                        Switch(
-                            checked = isFakeErrorEnabled,
-                            onCheckedChange = { isFakeErrorEnabled = it },
-                            modifier = Modifier.testTag("toggle_fake_error_switch")
-                        )
-                    }
                 }
             }
 
@@ -313,7 +294,6 @@ fun LockTypeConfigScreen(
                         passwordCode = passCode,
                         isBiometricEnabled = isBiometricEnabled,
                         isStealthPattern = isStealthPattern,
-                        isFakeErrorEnabled = isFakeErrorEnabled,
                         vibrationEnabled = vibrationEnabled
                     )
                     onSaveSettings(updated)

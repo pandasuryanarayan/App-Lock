@@ -44,7 +44,6 @@ fun LockOverlayScreen(
     var isError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    var showFakeError by remember { mutableStateOf(settings.isFakeErrorEnabled) }
     var showRecoveryDialog by remember { mutableStateOf(false) }
     var recoveryAnswerInput by remember { mutableStateOf("") }
     var recoveryError by remember { mutableStateOf<String?>(null) }
@@ -53,74 +52,9 @@ fun LockOverlayScreen(
 
     // Auto-prompt biometric on first load if enabled
     LaunchedEffect(Unit) {
-        if (!showFakeError && (settings.isBiometricEnabled || activeLockMode == LockType.BIOMETRIC.name)) {
+        if (settings.isBiometricEnabled || activeLockMode == LockType.BIOMETRIC.name) {
             onTriggerBiometric?.invoke()
         }
-    }
-
-    if (showFakeError) {
-        // Fake Decoy Crash Screen
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.85f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = SlateSurface),
-                modifier = Modifier
-                    .padding(32.dp)
-                    .fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "App Stopped",
-                        tint = AlertRed,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "${appInfo.appName} keeps stopping",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "The application crashed due to an unexpected error.",
-                        fontSize = 14.sp,
-                        color = TextSecondaryDark,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { onDismiss() }
-                        ) {
-                            Text("Close App")
-                        }
-                        Button(
-                            onClick = {
-                                // Decoy secret bypass: clicking "Report" opens the real lock screen
-                                showFakeError = false
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
-                            modifier = Modifier.testTag("fake_crash_bypass_btn")
-                        ) {
-                            Text("Open App")
-                        }
-                    }
-                }
-            }
-        }
-        return
     }
 
     // Main Full-screen Lock Overlay UI

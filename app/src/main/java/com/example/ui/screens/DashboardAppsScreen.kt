@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.security.AppItemInfo
+import com.example.ui.components.AppIconImage
 import com.example.ui.components.AppIcons
 import com.example.ui.theme.*
 
@@ -401,34 +402,14 @@ fun DashboardAppsScreen(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    // App Icon Container
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = when(app.category) {
-                                            "BANKING" -> CyberCyan.copy(alpha = 0.2f)
-                                            "SOCIAL" -> ShieldGreen.copy(alpha = 0.2f)
-                                            else -> SlateSurfaceVariant
-                                        },
-                                        modifier = Modifier.size(44.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = when(app.category) {
-                                                    "BANKING" -> AppIcons.AccountBalance
-                                                    "SOCIAL" -> AppIcons.ChatBubble
-                                                    "SYSTEM" -> AppIcons.Settings
-                                                    else -> AppIcons.Android
-                                                },
-                                                contentDescription = app.appName,
-                                                tint = when(app.category) {
-                                                    "BANKING" -> CyberCyanLight
-                                                    "SOCIAL" -> ShieldGreen
-                                                    else -> Color.White
-                                                },
-                                                modifier = Modifier.size(24.dp)
-                                            )
-                                        }
-                                    }
+                                    // App Logo / Icon Container
+                                    AppIconImage(
+                                        packageName = app.packageName,
+                                        appName = app.appName,
+                                        category = app.category,
+                                        sizeDp = 44.dp,
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
 
                                     Column {
                                         Row(

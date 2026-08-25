@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.entities.IntruderLogEntity
+import com.example.ui.components.AppIconImage
 import com.example.ui.components.AppIcons
 import com.example.ui.theme.*
 import java.text.SimpleDateFormat
@@ -100,20 +101,12 @@ fun IntruderLogsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = AlertRed.copy(alpha = 0.2f),
-                                    modifier = Modifier.size(48.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = AppIcons.NoAccounts,
-                                            contentDescription = null,
-                                            tint = AlertRed,
-                                            modifier = Modifier.size(26.dp)
-                                        )
-                                    }
-                                }
+                                AppIconImage(
+                                    packageName = log.packageName,
+                                    appName = log.appName,
+                                    sizeDp = 48.dp,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
 
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(

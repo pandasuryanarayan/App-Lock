@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.entities.LockType
 import com.example.data.entities.SecuritySettingsEntity
 import com.example.security.AppItemInfo
+import com.example.ui.components.AppIconImage
 import com.example.ui.components.AppIcons
 import com.example.ui.components.PatternLockCanvas
 import com.example.ui.components.PinPadView
@@ -114,24 +115,13 @@ fun LockOverlayScreen(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = SlateSurface,
-                    modifier = Modifier.size(72.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = when(appInfo.category) {
-                                "BANKING" -> AppIcons.AccountBalance
-                                "SOCIAL" -> AppIcons.ChatBubble
-                                else -> AppIcons.Apps
-                            },
-                            contentDescription = appInfo.appName,
-                            tint = CyberCyanLight,
-                            modifier = Modifier.size(36.dp)
-                        )
-                    }
-                }
+                AppIconImage(
+                    packageName = appInfo.packageName,
+                    appName = appInfo.appName,
+                    category = appInfo.category,
+                    sizeDp = 72.dp,
+                    shape = CircleShape
+                )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = appInfo.appName,

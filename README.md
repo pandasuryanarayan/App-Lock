@@ -109,7 +109,7 @@ App Locker requires the following Android system permissions to protect applicat
    The signed APK will be located at:
    `app/build/outputs/apk/release/app-release.apk`
 
-   > **⚠️ Keep your signing key safe**: The `my-upload-key.jks` file is excluded from git (see `.gitignore`). Back it up securely — if you lose it, you will **not** be able to update your app on the Play Store under the same identity.
+   > **⚠️ Keep your signing key safe**: The `my-upload-key.jks` file is excluded from git (see `.gitignore`). Back it up securely — if you lose it, you will **not** be able to update your app on the Play Store under the same identity. For Eg:- applock
 
 ---
 

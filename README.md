@@ -24,7 +24,7 @@ A modern, high-performance Android App Locker application built with **Jetpack C
 - 🎨 **Sleek Cyber-Dark Theme**:
   - Custom Material 3 dark color scheme featuring Neon Cyan accents (`#00F5FF`) and Shield Emerald security indicators.
   - Fully responsive across phones, foldables, and tablets.
-- 📦 **Ultra Lightweight (< 9MB)**:
+- 📦 **Ultra Lightweight (< 5MB)**:
   - Vectorized custom icon system and R8 optimization for minimal disk footprint and lightning-fast cold start.
 
 ---

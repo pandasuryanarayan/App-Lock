@@ -35,7 +35,7 @@ abstract class AppLockerDatabase : RoomDatabase() {
                     AppLockerDatabase::class.java,
                     "app_locker_db"
                 )
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration(dropAllTables = true)
                 .build()
                 INSTANCE = instance
                 instance

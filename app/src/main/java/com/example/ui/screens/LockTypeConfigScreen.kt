@@ -107,7 +107,7 @@ fun LockTypeConfigScreen(
                 }
             }
 
-            Divider(color = SlateSurfaceVariant)
+            HorizontalDivider(color = SlateSurfaceVariant)
 
             // Code customizers
             Text(
@@ -232,7 +232,7 @@ fun LockTypeConfigScreen(
                 }
             }
 
-            Divider(color = SlateSurfaceVariant)
+            HorizontalDivider(color = SlateSurfaceVariant)
 
             // Advanced Security Features
             Text(

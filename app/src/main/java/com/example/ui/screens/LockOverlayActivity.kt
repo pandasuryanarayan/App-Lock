@@ -10,6 +10,7 @@ import android.os.Vibrator
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.data.db.AppLockerDatabase
@@ -189,7 +190,7 @@ class LockOverlayActivity : FragmentActivity() {
     private fun vibratePhone() {
         try {
             if (securitySettings.vibrationEnabled) {
-                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                val vibrator = ContextCompat.getSystemService(this, Vibrator::class.java)
                 if (vibrator != null) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))

@@ -134,9 +134,7 @@ class AppLockForegroundService : Service() {
 
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
-            if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED ||
-                event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND
-            ) {
+            if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
                 topPackage = event.packageName
             }
         }

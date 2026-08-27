@@ -75,6 +75,9 @@ android {
     includeInBundle = true
   }
   packaging {
+    jniLibs {
+      keepDebugSymbols += listOf("**/libandroidx.graphics.path.so")
+    }
     resources {
       excludes += listOf(
         "/META-INF/{AL2.0,LGPL2.1}",

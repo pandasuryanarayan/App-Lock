@@ -11,28 +11,19 @@ import android.os.Process
 import android.provider.Settings
 import android.text.TextUtils
 import android.widget.Toast
+import androidx.core.app.AppOpsManagerCompat
 import androidx.core.content.ContextCompat
 
 object PermissionHelper {
 
     fun hasUsageAccess(context: Context): Boolean {
         return try {
-            val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
-            val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                appOps?.unsafeCheckOpNoThrow(
-                    AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    Process.myUid(),
-                    context.packageName
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                appOps?.checkOpNoThrow(
-                    AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    Process.myUid(),
-                    context.packageName
-                )
-            }
-            if (mode == AppOpsManager.MODE_ALLOWED) {
+            val mode = AppOpsManagerCompat.noteProxyOpNoThrow(
+                context,
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                context.packageName
+            )
+            if (mode == AppOpsManagerCompat.MODE_ALLOWED) {
                 return true
             }
 

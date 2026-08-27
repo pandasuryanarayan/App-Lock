@@ -229,7 +229,7 @@ fun LockOverlayScreen(
                             Surface(
                                 shape = CircleShape,
                                 color = CyberCyan.copy(alpha = 0.15f),
-                                border = ButtonDefaults.outlinedButtonBorder,
+                                border = ButtonDefaults.outlinedButtonBorder(enabled = true),
                                 modifier = Modifier
                                     .size(100.dp)
                                     .clickable {

@@ -60,7 +60,7 @@ fun AppLockerMainNavigation(
                     title = { Text("Intruder Security Logs", color = Color.White) },
                     navigationIcon = {
                         IconButton(onClick = { showIntruderLogs = false }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                            Icon(AppIcons.ArrowBack, contentDescription = "Back", tint = Color.White)
                         }
                     },
                     actions = {

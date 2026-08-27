@@ -175,7 +175,7 @@ fun SettingsAndPermissionsScreen(
                         }
                     }
 
-                    Divider(color = SlateSurfaceVariant)
+                    HorizontalDivider(color = SlateSurfaceVariant)
 
                     // Draw Over Apps Permission
                     Row(

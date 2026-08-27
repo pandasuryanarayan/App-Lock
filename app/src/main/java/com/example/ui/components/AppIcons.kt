@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathFillType
@@ -21,7 +22,7 @@ object AppIcons {
     val Delete: ImageVector = Icons.Default.Delete
     val Warning: ImageVector = Icons.Default.Warning
     val Close: ImageVector = Icons.Default.Close
-    val ArrowBack: ImageVector = Icons.Default.ArrowBack
+    val ArrowBack: ImageVector = Icons.AutoMirrored.Filled.ArrowBack
     val Add: ImageVector = Icons.Default.Add
 
     // Fingerprint Vector Icon

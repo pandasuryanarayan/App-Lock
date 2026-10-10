@@ -233,7 +233,7 @@ When manually installing an APK from GitHub or local storage, Android 13+ may re
 
 | Tool | Version |
 | :--- | :--- |
-| **Android Studio** | Ladybug / Meerkat or newer |
+| **Android Studio** | Latest stable (must support AGP 9.x) |
 | **JDK** | Java 17 or 21 (project compiles to Java 11 bytecode) |
 | **Min SDK** | Android 7.0 (API 24) |
 | **Target / Compile SDK** | Android 16 (API 36) |
@@ -241,55 +241,32 @@ When manually installing an APK from GitHub or local storage, Android 13+ may re
 
 ### ⚙️ Build & Run
 
-1. **Clone the repository**
+1. **Clone and open**
    ```bash
    git clone https://github.com/pandasuryanarayan/App-Lock.git
    cd App-Lock
    ```
+   Open the folder in Android Studio and let Gradle sync.
 
-2. **Open in Android Studio**
-   - Launch Android Studio → **File → Open** → select the `App-Lock` directory.
-   - Let Gradle finish syncing.
-
-3. **Generate a local debug keystore (first run only)**
-   The `debug` variant signs with `debug.keystore` in the project root (gitignored, never committed). Create it once:
+2. **Debug keystore (first run only)**
    ```bash
    keytool -genkeypair -keystore debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug, O=Android, C=US"
    ```
 
-4. **Build a debug APK**
+3. **Build & install**
    ```bash
-   ./gradlew assembleDebug
+   ./gradlew assembleDebug      # APK: app/build/outputs/apk/debug/app-debug.apk
+   ./gradlew installDebug       # or press Run ▶ (enable USB debugging first)
    ```
-   Output: `app/build/outputs/apk/debug/app-debug.apk`
 
-5. **Install on a device / emulator**
-   ```bash
-   ./gradlew installDebug
-   ```
-   Or press **Run ▶** in Android Studio. Make sure USB debugging is enabled on a real device.
-
-6. **(Optional) Build a signed release APK**
-   The release build is signed with an upload key (`my-upload-key.jks`, **not** tracked in git). Provide credentials via environment variables:
+4. **Signed release APK (optional)**
    ```bash
    export KEYSTORE_PATH="$PWD/my-upload-key.jks"
    export STORE_PASSWORD="your-store-password"
    export KEY_PASSWORD="your-key-password"
-   ./gradlew assembleRelease
+   ./gradlew assembleRelease    # APK: app/build/outputs/apk/release/app-release.apk
    ```
-   Output: `app/build/outputs/apk/release/app-release.apk`
-
-   > **🔐 Keep your signing key safe.** The `my-upload-key.jks` file is excluded from git (see `.gitignore`). Back it up securely — if you lose it, you will **not** be able to update your app on the Play Store under the same identity. For Eg:- applock.
-
-### 🔑 Local Secrets
-
-The project uses the [Secrets Gradle Plugin](https://github.com/google/secrets-gradle-plugin) for `.env`-style local config (e.g. a future `GEMINI_API_KEY`). Copy the template and edit locally:
-
-```bash
-cp .env.example .env
-```
-
-`.env` is gitignored. The plugin will fall back to `.env.example` if `.env` is missing, so the build never breaks.
+   `my-upload-key.jks` is gitignored — back it up; losing it means no more updates under the same app identity.
 
 ---
 
@@ -327,7 +304,7 @@ cp .env.example .env
 
 | Variant | Minify | Shrink Resources | Signing |
 | :--- | :---: | :---: | :--- |
-| `debug` | ✅ | ✅ | `debugConfig` (`debug.keystore` in project root, gitignored — generate once, see step 3 above) |
+| `debug` | ✅ | ✅ | `debugConfig` (`debug.keystore` in project root, gitignored — step 2 above) |
 | `release` | ✅ | ✅ | `release` keystore via env vars (fallback: `my-upload-key.jks`) |
 
 Both build types run R8 with `proguard-android-optimize.txt` plus project rules in `app/proguard-rules.pro`. R8 + resource shrinking is what keeps the final APK under 5 MB.

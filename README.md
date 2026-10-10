@@ -38,15 +38,17 @@ A modern, high-performance Android App Locker built with **Jetpack Compose**, **
 ## ✨ Features
 
 - 🔐 **Multiple Lock Types**:
-  - **4-Digit PIN** — Custom tactile numpad with haptic feedback.
+  - **4-Digit PIN** — Custom numpad for 4-digit PIN entry.
   - **3×3 Pattern Lock** — Smooth gesture-based pattern connector canvas.
   - **Alphanumeric Password** — Full password protection with visibility toggles.
-  - **Biometric Authentication** — Seamless Android `BiometricPrompt` integration (Fingerprint / Face Unlock).
+  - **Biometric Authentication** — Android `BiometricPrompt` integration (Fingerprint / Face Unlock).
 - ⚡ **Real-Time Detection Engine**:
   - **Foreground Monitoring** — High-precision detection via Android `UsageStatsManager` with battery-optimized polling.
 - 🖼️ **Non-Intrusive Overlay Screen**:
   - System Alert Window (`SYSTEM_ALERT_WINDOW`) overlay presenting authentication without killing background processes.
-  - Quick-dismiss and emergency recovery questions.
+  - Opens with an animated padlock-engage transition; quick-dismiss and emergency recovery questions.
+- 🚀 **Animated Launch Splash**:
+  - Official `core-splashscreen` + Animated Vector Drawable: an open padlock snaps shut on every cold start, then lands straight on home for configured setups.
 - 🚨 **Intruder Detection & Security Audit Logs**:
   - Captures failed unlock attempts with exact timestamps and target app names.
   - Chronological activity history with quick-clear and review capabilities.
@@ -54,7 +56,7 @@ A modern, high-performance Android App Locker built with **Jetpack Compose**, **
   - Custom Material 3 dark color scheme featuring Neon Cyan accents (`#00F5FF`) and Shield Emerald security indicators.
   - Fully responsive across phones, foldables, and tablets.
 - 📦 **Ultra Lightweight (< 5MB)**:
-  - Vectorized custom icon system and R8 optimization for minimal disk footprint and lightning-fast cold start.
+  - Vectorized custom icon system and R8 optimization for minimal disk footprint and fast cold start.
 
 ---
 
@@ -141,7 +143,8 @@ App-Lock/
 │       │   │                           # LockOverlay (Activity + Screen),
 │       │   │                           # IntruderLogs, SettingsAndPermissions
 │       │   └── res/
-│       │       ├── drawable/           # Vector icons & custom backgrounds
+│       │       ├── animator/             # Splash shackle-close + body-tint sets
+│       │       ├── drawable/           # Vectors incl. animated splash padlock (AVD)
 │       │       ├── mipmap-*/           # Adaptive launcher icons
 │       │       ├── values/             # Strings, colors, themes
 │       │       └── xml/                # Backup & data extraction rules
@@ -176,7 +179,8 @@ App-Lock/
 | **`PermissionHelper`** | Centralized runtime + special-access permission checks and rationale flows. | `security/PermissionHelper.kt` |
 | **`BootReceiver`** | Re-enables protection after device reboot so the lock is never silently disabled. | `security/BootReceiver.kt` |
 | **`LockOverlayActivity`** | Transparent `singleInstance` Activity launched over the target app that hosts `LockOverlayScreen`. | `ui/screens/LockOverlayActivity.kt` |
-| **`PinPadView`** | Custom Compose canvas for tactile 4-digit PIN entry with haptics. | `ui/components/PinPadView.kt` |
+| **`PinPadView`** | Custom Compose canvas for 4-digit PIN entry. | `ui/components/PinPadView.kt` |
+| **`LockEngageAnimation`** | Dependency-free Canvas padlock open → locked transition on the lock overlay. | `ui/components/LockEngageAnimation.kt` |
 | **`PatternLockCanvas`** | Custom Compose canvas for gesture-based 3×3 pattern input. | `ui/components/PatternLockCanvas.kt` |
 
 ### 🧭 Screen Map
@@ -186,7 +190,7 @@ App-Lock/
 | Onboarding | `OnboardingSetupScreen.kt` | First-run flow: choose lock type, set credential, grant permissions. |
 | Dashboard | `DashboardAppsScreen.kt` | List of installed apps with toggles to add/remove protection. |
 | Lock Type Config | `LockTypeConfigScreen.kt` | Configure PIN / Pattern / Password / Biometric. |
-| Lock Overlay | `LockOverlayScreen.kt` (+ `LockOverlayActivity`) | The full-screen unlock surface shown over protected apps. |
+| Lock Overlay | `LockOverlayScreen.kt` (+ `LockOverlayActivity`) | The full-screen unlock surface shown over protected apps. Opens with a padlock-engage animation. |
 | Intruder Logs | `IntruderLogsScreen.kt` | Chronological history of failed unlock attempts. |
 | Settings & Permissions | `SettingsAndPermissionsScreen.kt` | Toggle protection, manage permissions, jump to system settings. |
 
@@ -202,7 +206,7 @@ App Locker requires the following Android system permissions to deliver on-devic
 | `SYSTEM_ALERT_WINDOW` | Displays the security lock overlay above locked applications. | `SettingsAndPermissionsScreen` (special access) |
 | `USE_BIOMETRIC` / `USE_FINGERPRINT` | Enables fingerprint and biometric unlock prompts. | `LockTypeConfigScreen` |
 | `POST_NOTIFICATIONS` | Displays the active protection foreground service notification. | Runtime (API 33+) |
-| `VIBRATE` | Provides haptic feedback during unlock interactions. | Manifest |
+| `VIBRATE` | Vibrates on failed unlock attempts (toggle in Security settings). | Manifest |
 | `RECEIVE_BOOT_COMPLETED` | Restarts protection automatically after device reboot. | `BootReceiver` |
 | `QUERY_ALL_PACKAGES` | Enumerates installed apps for the lock selection list. | Manifest (API 30+) |
 | `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_SPECIAL_USE` | Runs the persistent monitoring service. | `AppLockForegroundService` |
@@ -247,19 +251,25 @@ When manually installing an APK from GitHub or local storage, Android 13+ may re
    - Launch Android Studio → **File → Open** → select the `App-Lock` directory.
    - Let Gradle finish syncing.
 
-3. **Build a debug APK**
+3. **Generate a local debug keystore (first run only)**
+   The `debug` variant signs with `debug.keystore` in the project root (gitignored, never committed). Create it once:
+   ```bash
+   keytool -genkeypair -keystore debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug, O=Android, C=US"
+   ```
+
+4. **Build a debug APK**
    ```bash
    ./gradlew assembleDebug
    ```
    Output: `app/build/outputs/apk/debug/app-debug.apk`
 
-4. **Install on a device / emulator**
+5. **Install on a device / emulator**
    ```bash
    ./gradlew installDebug
    ```
    Or press **Run ▶** in Android Studio. Make sure USB debugging is enabled on a real device.
 
-5. **(Optional) Build a signed release APK**
+6. **(Optional) Build a signed release APK**
    The release build is signed with an upload key (`my-upload-key.jks`, **not** tracked in git). Provide credentials via environment variables:
    ```bash
    export KEYSTORE_PATH="$PWD/my-upload-key.jks"
@@ -317,7 +327,7 @@ cp .env.example .env
 
 | Variant | Minify | Shrink Resources | Signing |
 | :--- | :---: | :---: | :--- |
-| `debug` | ✅ | ✅ | `debugConfig` (auto-generated `debug.keystore`) |
+| `debug` | ✅ | ✅ | `debugConfig` (`debug.keystore` in project root, gitignored — generate once, see step 3 above) |
 | `release` | ✅ | ✅ | `release` keystore via env vars (fallback: `my-upload-key.jks`) |
 
 Both build types run R8 with `proguard-android-optimize.txt` plus project rules in `app/proguard-rules.pro`. R8 + resource shrinking is what keeps the final APK under 5 MB.
@@ -327,9 +337,9 @@ Both build types run R8 with `proguard-android-optimize.txt` plus project rules 
 ## ⚡ Performance
 
 - **APK size < 5 MB** — vector drawables only, R8 + resource shrinking, no third-party image-loading library in the runtime graph.
-- **Cold start** — Compose-only UI, no legacy `View` inflation; `MainActivity` boots straight into the navigation graph.
-- **Battery** — `UsageStatsManager` polled at an adaptive interval inside the foreground service; idle when no protected apps are selected.
-- **Memory** — All state lives in a single `ViewModel`; no leaked observers because all flows are collected in `repeatOnLifecycle(STARTED)`.
+- **Cold start** — Compose-only UI, no legacy `View` inflation; the animated system splash covers settings load, then `MainActivity` boots straight into the navigation graph.
+- **Battery** — `UsageStatsManager` polled on a fixed 300 ms interval inside the foreground service; idle when no protected apps are selected.
+- **Memory** — All state lives in a single `ViewModel` (`StateFlow` collected via `collectAsState`); one state object drives every screen.
 
 ---
 
@@ -390,7 +400,7 @@ Contributions are welcome and appreciated! 💚
 3. **Write tests** for any new ViewModel or repository logic. Add a Roborazzi golden for any new screen.
 4. **Run the full check suite before pushing:**
    ```bash
-   ./gradlew test lint detekt
+   ./gradlew test
    ```
 5. **Open a Pull Request** with a clear description and screenshots/GIFs for UI changes.
 

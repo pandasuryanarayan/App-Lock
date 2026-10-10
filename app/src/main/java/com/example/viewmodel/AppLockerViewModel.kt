@@ -7,7 +7,6 @@ import com.example.data.db.AppLockerDatabase
 import com.example.data.entities.IntruderLogEntity
 import com.example.data.entities.LockedAppEntity
 import com.example.data.entities.SecuritySettingsEntity
-import com.example.data.entities.VaultItemEntity
 import com.example.repository.AppLockerRepository
 import com.example.security.AppItemInfo
 import com.example.security.AppLockStateManager
@@ -16,12 +15,12 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 data class AppLockerUiState(
+    val isInitializing: Boolean = true,
     val isSetupCompleted: Boolean = false,
     val securitySettings: SecuritySettingsEntity = SecuritySettingsEntity(),
     val installedApps: List<AppItemInfo> = emptyList(),
     val lockedAppsMap: Map<String, Boolean> = emptyMap(),
     val intruderLogs: List<IntruderLogEntity> = emptyList(),
-    val vaultItems: List<VaultItemEntity> = emptyList(),
     val selectedCategoryFilter: String = "ALL", // "ALL", "BANKING", "SOCIAL", "SYSTEM", "LOCKED"
     val searchQuery: String = "",
     val activeSimulationPackage: AppItemInfo? = null, // Holds app info currently testing overlay lock
@@ -48,6 +47,7 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
 
             _uiState.update {
                 it.copy(
+                    isInitializing = false,
                     isSetupCompleted = settings.isSetupCompleted,
                     securitySettings = settings,
                     installedApps = apps
@@ -90,13 +90,6 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
             launch {
                 repository.intruderLogs.collect { logs ->
                     _uiState.update { it.copy(intruderLogs = logs) }
-                }
-            }
-
-            // Observe vault
-            launch {
-                repository.vaultItems.collect { items ->
-                    _uiState.update { it.copy(vaultItems = items) }
                 }
             }
 
@@ -300,20 +293,6 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             repository.clearIntruderLogs()
             showSnackbar("Intruder log history cleared.")
-        }
-    }
-
-    fun addVaultItem(title: String, secretContent: String, category: String) {
-        viewModelScope.launch {
-            repository.addVaultItem(title, secretContent, category)
-            showSnackbar("Saved item to Private Vault.")
-        }
-    }
-
-    fun deleteVaultItem(id: Long) {
-        viewModelScope.launch {
-            repository.deleteVaultItem(id)
-            showSnackbar("Removed item from vault.")
         }
     }
 

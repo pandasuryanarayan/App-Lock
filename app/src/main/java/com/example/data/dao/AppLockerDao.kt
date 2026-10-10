@@ -4,7 +4,6 @@ import androidx.room.*
 import com.example.data.entities.IntruderLogEntity
 import com.example.data.entities.LockedAppEntity
 import com.example.data.entities.SecuritySettingsEntity
-import com.example.data.entities.VaultItemEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -48,14 +47,4 @@ interface AppLockerDao {
 
     @Query("DELETE FROM intruder_logs")
     suspend fun clearIntruderLogs()
-
-    // Vault Items
-    @Query("SELECT * FROM vault_items ORDER BY createdAt DESC")
-    fun getVaultItems(): Flow<List<VaultItemEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertVaultItem(item: VaultItemEntity)
-
-    @Query("DELETE FROM vault_items WHERE id = :id")
-    suspend fun deleteVaultItem(id: Long)
 }

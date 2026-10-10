@@ -5,7 +5,6 @@ import com.example.data.dao.AppLockerDao
 import com.example.data.entities.IntruderLogEntity
 import com.example.data.entities.LockedAppEntity
 import com.example.data.entities.SecuritySettingsEntity
-import com.example.data.entities.VaultItemEntity
 import com.example.security.AppItemInfo
 import com.example.security.InstalledAppsManager
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +18,6 @@ class AppLockerRepository(
 ) {
     val securitySettings: Flow<SecuritySettingsEntity?> = dao.getSecuritySettings()
     val intruderLogs: Flow<List<IntruderLogEntity>> = dao.getIntruderLogs()
-    val vaultItems: Flow<List<VaultItemEntity>> = dao.getVaultItems()
     val lockedAppsInDb: Flow<List<LockedAppEntity>> = dao.getAllLockedApps()
 
     suspend fun getInitialSettings(): SecuritySettingsEntity {
@@ -118,23 +116,6 @@ class AppLockerRepository(
     suspend fun clearIntruderLogs() {
         withContext(Dispatchers.IO) {
             dao.clearIntruderLogs()
-        }
-    }
-
-    suspend fun addVaultItem(title: String, secretContent: String, category: String) {
-        withContext(Dispatchers.IO) {
-            val item = VaultItemEntity(
-                title = title,
-                secretContent = secretContent,
-                category = category
-            )
-            dao.insertVaultItem(item)
-        }
-    }
-
-    suspend fun deleteVaultItem(id: Long) {
-        withContext(Dispatchers.IO) {
-            dao.deleteVaultItem(id)
         }
     }
 

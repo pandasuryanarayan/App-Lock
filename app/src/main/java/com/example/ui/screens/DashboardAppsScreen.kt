@@ -278,7 +278,7 @@ fun DashboardAppsScreen(
                                     .weight(0.95f)
                                     .testTag("quick_unlock_all_btn")
                             ) {
-                                Text("Unlock All", fontSize = 12.sp, color = TextSecondaryDark)
+                                Text("Unlock All", fontSize = 12.sp, color = Color.White)
                             }
                         }
                     }
@@ -289,7 +289,7 @@ fun DashboardAppsScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
-                placeholder = { Text("Search apps (e.g. PayPal, WhatsApp)...", color = TextSecondaryDark) },
+                placeholder = { Text("Search apps (e.g. Whatsapp)...", color = TextSecondaryDark) },
                 leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = TextSecondaryDark) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
@@ -299,15 +299,29 @@ fun DashboardAppsScreen(
                     }
                 },
                 singleLine = true,
+                textStyle = LocalTextStyle.current.copy(color = Color.White),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 6.dp)
                     .testTag("app_search_field"),
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    disabledTextColor = TextSecondaryDark,
                     focusedBorderColor = CyberCyanLight,
                     unfocusedBorderColor = SlateSurfaceVariant,
                     focusedContainerColor = SlateSurface,
-                    unfocusedContainerColor = SlateSurface
+                    unfocusedContainerColor = SlateSurface,
+                    disabledContainerColor = SlateSurface,
+                    cursorColor = CyberCyanLight,
+                    focusedLeadingIconColor = CyberCyanLight,
+                    unfocusedLeadingIconColor = TextSecondaryDark,
+                    focusedTrailingIconColor = CyberCyanLight,
+                    unfocusedTrailingIconColor = TextSecondaryDark,
+                    focusedPlaceholderColor = TextSecondaryDark,
+                    unfocusedPlaceholderColor = TextSecondaryDark,
+                    focusedLabelColor = CyberCyanLight,
+                    unfocusedLabelColor = TextSecondaryDark
                 ),
                 shape = RoundedCornerShape(16.dp)
             )

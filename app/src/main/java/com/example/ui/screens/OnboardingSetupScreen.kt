@@ -28,6 +28,8 @@ import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.CyberCyanLight
 import com.example.ui.theme.ObsidianDark
 import com.example.ui.theme.SlateSurface
+import com.example.ui.theme.SlateSurfaceVariant
+import com.example.ui.theme.TextSecondaryDark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -274,8 +276,20 @@ fun OnboardingSetupScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .testTag("onboarding_pass_input"),
+                                singleLine = true,
+                                textStyle = LocalTextStyle.current.copy(color = Color.White),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = CyberCyanLight
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    disabledTextColor = TextSecondaryDark,
+                                    focusedContainerColor = SlateSurface,
+                                    unfocusedContainerColor = SlateSurface,
+                                    disabledContainerColor = SlateSurface,
+                                    cursorColor = CyberCyanLight,
+                                    focusedBorderColor = CyberCyanLight,
+                                    unfocusedBorderColor = SlateSurfaceVariant,
+                                    focusedLabelColor = CyberCyanLight,
+                                    unfocusedLabelColor = TextSecondaryDark
                                 )
                             )
                         }
@@ -362,7 +376,21 @@ fun OnboardingSetupScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("onboarding_sq_input"),
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = CyberCyanLight)
+                            singleLine = true,
+                            textStyle = LocalTextStyle.current.copy(color = Color.White),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                disabledTextColor = TextSecondaryDark,
+                                focusedContainerColor = SlateSurface,
+                                unfocusedContainerColor = SlateSurface,
+                                disabledContainerColor = SlateSurface,
+                                cursorColor = CyberCyanLight,
+                                focusedBorderColor = CyberCyanLight,
+                                unfocusedBorderColor = SlateSurfaceVariant,
+                                focusedLabelColor = CyberCyanLight,
+                                unfocusedLabelColor = TextSecondaryDark
+                            )
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -374,7 +402,21 @@ fun OnboardingSetupScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("onboarding_sa_input"),
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = CyberCyanLight)
+                            singleLine = true,
+                            textStyle = LocalTextStyle.current.copy(color = Color.White),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                disabledTextColor = TextSecondaryDark,
+                                focusedContainerColor = SlateSurface,
+                                unfocusedContainerColor = SlateSurface,
+                                disabledContainerColor = SlateSurface,
+                                cursorColor = CyberCyanLight,
+                                focusedBorderColor = CyberCyanLight,
+                                unfocusedBorderColor = SlateSurfaceVariant,
+                                focusedLabelColor = CyberCyanLight,
+                                unfocusedLabelColor = TextSecondaryDark
+                            )
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))

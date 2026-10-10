@@ -8,16 +8,14 @@ import com.example.data.dao.AppLockerDao
 import com.example.data.entities.IntruderLogEntity
 import com.example.data.entities.LockedAppEntity
 import com.example.data.entities.SecuritySettingsEntity
-import com.example.data.entities.VaultItemEntity
 
 @Database(
     entities = [
         LockedAppEntity::class,
         SecuritySettingsEntity::class,
-        IntruderLogEntity::class,
-        VaultItemEntity::class
+        IntruderLogEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppLockerDatabase : RoomDatabase() {

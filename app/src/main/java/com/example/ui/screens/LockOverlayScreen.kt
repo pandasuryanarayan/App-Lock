@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -21,6 +25,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import com.example.data.entities.LockType
 import com.example.data.entities.SecuritySettingsEntity
 import com.example.security.AppItemInfo
@@ -50,6 +55,25 @@ fun LockOverlayScreen(
     var recoveryError by remember { mutableStateOf<String?>(null) }
 
     var activeLockMode by remember { mutableStateOf(settings.activeLockType) }
+
+    // Lock-engage animation: overlay opens with a small grey lock that
+    // animates (scale + tint) into the locked cyan state, instead of a
+    // static lock splash icon.
+    var lockEngaged by remember { mutableStateOf(false) }
+    val lockScale by animateFloatAsState(
+        targetValue = if (lockEngaged) 1f else 0.6f,
+        animationSpec = tween(durationMillis = 500),
+        label = "lock_engage_scale"
+    )
+    val lockTint by animateColorAsState(
+        targetValue = if (lockEngaged) CyberCyanLight else TextSecondaryDark,
+        animationSpec = tween(durationMillis = 500),
+        label = "lock_engage_tint"
+    )
+    LaunchedEffect(Unit) {
+        delay(450)
+        lockEngaged = true
+    }
 
     // Auto-prompt biometric on first load if enabled
     LaunchedEffect(Unit) {
@@ -95,9 +119,12 @@ fun LockOverlayScreen(
                 ) {
                     Icon(
                         imageVector = AppIcons.Lock,
-                        contentDescription = null,
-                        tint = CyberCyanLight,
-                        modifier = Modifier.size(20.dp)
+                        contentDescription = if (lockEngaged) "Locked" else "Locking",
+                        tint = lockTint,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .scale(lockScale)
+                            .testTag("overlay_lock_transition")
                     )
                     Text(
                         text = "App Locker Security",

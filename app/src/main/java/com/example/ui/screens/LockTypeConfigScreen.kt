@@ -13,7 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.entities.LockType
@@ -40,6 +43,21 @@ fun LockTypeConfigScreen(
 
     var question by remember { mutableStateOf(settings.securityQuestion) }
     var answer by remember { mutableStateOf(settings.securityAnswer) }
+
+    // Sync local editable state when persisted settings load/change
+    // (settings are loaded async from Room, so initial remember() would otherwise stay empty
+    // and the saved backup PIN would appear "not visible").
+    LaunchedEffect(settings) {
+        activeType = settings.activeLockType
+        pinCode = settings.pinCode
+        patternCode = settings.patternCode
+        passCode = settings.passwordCode
+        isBiometricEnabled = settings.isBiometricEnabled
+        isStealthPattern = settings.isStealthPattern
+        vibrationEnabled = settings.vibrationEnabled
+        question = settings.securityQuestion
+        answer = settings.securityAnswer
+    }
 
     val scrollState = rememberScrollState()
 
@@ -132,8 +150,24 @@ fun LockTypeConfigScreen(
                         value = passCode,
                         onValueChange = { passCode = it },
                         label = { Text("Password") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = CyberCyanLight)
+                        modifier = Modifier.fillMaxWidth().testTag("password_input"),
+                        singleLine = true,
+                        textStyle = LocalTextStyle.current.copy(color = Color.White),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            disabledTextColor = TextSecondaryDark,
+                            focusedContainerColor = SlateSurface,
+                            unfocusedContainerColor = SlateSurface,
+                            disabledContainerColor = SlateSurface,
+                            cursorColor = CyberCyanLight,
+                            focusedBorderColor = CyberCyanLight,
+                            unfocusedBorderColor = SlateSurfaceVariant,
+                            focusedLabelColor = CyberCyanLight,
+                            unfocusedLabelColor = TextSecondaryDark,
+                            focusedPlaceholderColor = TextSecondaryDark,
+                            unfocusedPlaceholderColor = TextSecondaryDark
+                        )
                     )
                 }
                 LockType.BIOMETRIC.name -> {
@@ -165,10 +199,29 @@ fun LockTypeConfigScreen(
 
                             OutlinedTextField(
                                 value = pinCode,
-                                onValueChange = { if (it.length <= 6) pinCode = it },
+                                onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) pinCode = it },
                                 label = { Text("Backup PIN Code (4-6 digits)") },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = CyberCyanLight)
+                                placeholder = { Text("Enter backup PIN") },
+                                modifier = Modifier.fillMaxWidth().testTag("backup_pin_input"),
+                                singleLine = true,
+                                visualTransformation = VisualTransformation.None,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                textStyle = LocalTextStyle.current.copy(color = Color.White),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    disabledTextColor = TextSecondaryDark,
+                                    focusedContainerColor = SlateSurface,
+                                    unfocusedContainerColor = SlateSurface,
+                                    disabledContainerColor = SlateSurface,
+                                    cursorColor = CyberCyanLight,
+                                    focusedBorderColor = CyberCyanLight,
+                                    unfocusedBorderColor = SlateSurfaceVariant,
+                                    focusedLabelColor = CyberCyanLight,
+                                    unfocusedLabelColor = TextSecondaryDark,
+                                    focusedPlaceholderColor = TextSecondaryDark,
+                                    unfocusedPlaceholderColor = TextSecondaryDark
+                                )
                             )
 
                             Row(
@@ -224,10 +277,29 @@ fun LockTypeConfigScreen(
                 else -> {
                     OutlinedTextField(
                         value = pinCode,
-                        onValueChange = { if (it.length <= 6) pinCode = it },
+                        onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) pinCode = it },
                         label = { Text("PIN Code (4-6 digits)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = CyberCyanLight)
+                        placeholder = { Text("Enter PIN") },
+                        modifier = Modifier.fillMaxWidth().testTag("pin_input"),
+                        singleLine = true,
+                        visualTransformation = VisualTransformation.None,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        textStyle = LocalTextStyle.current.copy(color = Color.White),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            disabledTextColor = TextSecondaryDark,
+                            focusedContainerColor = SlateSurface,
+                            unfocusedContainerColor = SlateSurface,
+                            disabledContainerColor = SlateSurface,
+                            cursorColor = CyberCyanLight,
+                            focusedBorderColor = CyberCyanLight,
+                            unfocusedBorderColor = SlateSurfaceVariant,
+                            focusedLabelColor = CyberCyanLight,
+                            unfocusedLabelColor = TextSecondaryDark,
+                            focusedPlaceholderColor = TextSecondaryDark,
+                            unfocusedPlaceholderColor = TextSecondaryDark
+                        )
                     )
                 }
             }

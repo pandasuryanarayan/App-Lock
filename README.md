@@ -1,6 +1,6 @@
 # 🛡️ App Locker
 
-> **Secure your apps. Lock your vault. Stay private — fully on-device.**
+> **Secure your apps. Stay private — fully on-device.**
 
 A modern, high-performance Android App Locker built with **Jetpack Compose**, **Room Database**, and **Material Design 3**. Protect sensitive applications, files, and personal data using **PIN**, **3×3 Pattern**, **Alphanumeric Password**, or **Hardware Biometrics** (Fingerprint & Face Unlock) with real-time foreground detection and instant overlay protection.
 
@@ -47,8 +47,6 @@ A modern, high-performance Android App Locker built with **Jetpack Compose**, **
 - 🖼️ **Non-Intrusive Overlay Screen**:
   - System Alert Window (`SYSTEM_ALERT_WINDOW`) overlay presenting authentication without killing background processes.
   - Quick-dismiss and emergency recovery questions.
-- 🗄️ **Encrypted Security Vault**:
-  - Store secret notes, passwords, and private text records securely on-device.
 - 🚨 **Intruder Detection & Security Audit Logs**:
   - Captures failed unlock attempts with exact timestamps and target app names.
   - Chronological activity history with quick-clear and review capabilities.
@@ -128,7 +126,7 @@ App-Lock/
 │       │   │   ├── data/
 │       │   │   │   ├── db/             # Room database & type converters
 │       │   │   │   ├── dao/            # AppLockerDao — single source of DB access
-│       │   │   │   └── entities/       # LockedApp, SecuritySettings, VaultItem, IntruderLog
+│       │   │   │   └── entities/       # LockedApp, SecuritySettings, IntruderLog
 │       │   │   ├── repository/         # AppLockerRepository — domain layer
 │       │   │   ├── security/           # AppLockForegroundService, AppLockStateManager,
 │       │   │   │                       # BiometricPromptManager, InstalledAppsManager,
@@ -140,7 +138,7 @@ App-Lock/
 │       │   │       │                   # PinPadView, PatternLockCanvas
 │       │   │       ├── navigation/     # Compose Navigation graph
 │       │   │       └── screens/        # OnboardingSetup, DashboardApps, LockTypeConfig,
-│       │   │                           # LockOverlay (Activity + Screen), SecurityVault,
+│       │   │                           # LockOverlay (Activity + Screen),
 │       │   │                           # IntruderLogs, SettingsAndPermissions
 │       │   └── res/
 │       │       ├── drawable/           # Vector icons & custom backgrounds
@@ -154,6 +152,7 @@ App-Lock/
 ├── build.gradle.kts                    # Root build script
 ├── settings.gradle.kts                 # Project settings & repositories
 ├── metadata.json                       # AI Studio / app metadata
+├── release/                            # Versioned signed APKs (tracked, e.g. AppLock-v1.0-release.apk)
 ├── .env.example                        # Template for local secrets (e.g. Gemini API key)
 ├── my-upload-key.jks                   # ⚠️ Local upload key — gitignored
 ├── LICENSE.md
@@ -166,10 +165,10 @@ App-Lock/
 
 | Component | Role | Source |
 | :--- | :--- | :--- |
-| **`AppLockerViewModel`** | Exposes UI state as `StateFlow`; orchestrates lock configuration, app selection, and vault operations. | `viewmodel/AppLockerViewModel.kt` |
+| **`AppLockerViewModel`** | Exposes UI state as `StateFlow`; orchestrates lock configuration and app selection. | `viewmodel/AppLockerViewModel.kt` |
 | **`AppLockerRepository`** | Single source of truth wrapping the Room DAO; translates entities into domain models. | `repository/AppLockerRepository.kt` |
-| **`AppLockerDao`** | All Room queries (locked apps, vault items, security settings, intruder logs). | `data/dao/AppLockerDao.kt` |
-| **Entities** | `LockedAppEntity`, `SecuritySettingsEntity`, `VaultItemEntity`, `IntruderLogEntity`. | `data/entities/` |
+| **`AppLockerDao`** | All Room queries (locked apps, security settings, intruder logs). | `data/dao/AppLockerDao.kt` |
+| **Entities** | `LockedAppEntity`, `SecuritySettingsEntity`, `IntruderLogEntity`. | `data/entities/` |
 | **`AppLockForegroundService`** | `specialUse` foreground service that polls `UsageStatsManager` and triggers the lock overlay when a protected app comes to the front. | `security/AppLockForegroundService.kt` |
 | **`AppLockStateManager`** | Tracks the global "protection active" state and current foreground package. | `security/AppLockStateManager.kt` |
 | **`BiometricPromptManager`** | Wraps `androidx.biometric` and surfaces success/error results to the ViewModel. | `security/BiometricPromptManager.kt` |
@@ -188,7 +187,6 @@ App-Lock/
 | Dashboard | `DashboardAppsScreen.kt` | List of installed apps with toggles to add/remove protection. |
 | Lock Type Config | `LockTypeConfigScreen.kt` | Configure PIN / Pattern / Password / Biometric. |
 | Lock Overlay | `LockOverlayScreen.kt` (+ `LockOverlayActivity`) | The full-screen unlock surface shown over protected apps. |
-| Security Vault | `SecurityVaultScreen.kt` | Manage secret notes / passwords stored in Room. |
 | Intruder Logs | `IntruderLogsScreen.kt` | Chronological history of failed unlock attempts. |
 | Settings & Permissions | `SettingsAndPermissionsScreen.kt` | Toggle protection, manage permissions, jump to system settings. |
 
@@ -371,7 +369,6 @@ Gradle Toolchains + the `foojay-resolver` plugin (already configured in `setting
 
 ## 🗺️ Roadmap
 
-- [ ] **Encrypted vault** — AES-256-GCM at-rest encryption for `VaultItemEntity` (keys in Android Keystore).
 - [ ] **Intruder selfie** — silent front-camera capture on N failed attempts using CameraX.
 - [ ] **Time-based unlock rules** — auto-disable protection during trusted hours / locations.
 - [ ] **Wear OS companion** — quick-unlock from a paired smartwatch.
@@ -407,7 +404,7 @@ Be respectful, constructive, and inclusive. We follow the [Contributor Covenant]
 
 ## 🔒 Security & Privacy
 
-- **100% Offline & Local** — All credentials, secret questions, and vault notes are stored strictly on-device in a local SQLite database powered by Room.
+- **100% Offline & Local** — All credentials and secret questions are stored strictly on-device in a local SQLite database powered by Room.
 - **Zero Cloud Tracking** — No external telemetry, advertising trackers, or unauthorized internet transmission of user data.
 
 ---

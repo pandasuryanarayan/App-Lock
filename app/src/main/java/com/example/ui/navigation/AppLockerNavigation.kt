@@ -1,14 +1,20 @@
 package com.example.ui.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.ui.components.AppIcons
 import com.example.ui.screens.*
 import com.example.ui.theme.CyberCyanLight
@@ -19,7 +25,6 @@ import com.example.viewmodel.AppLockerViewModel
 enum class MainTab(val title: String, val icon: ImageVector, val tag: String) {
     APPS("App Locks", AppIcons.Apps, "nav_tab_apps"),
     LOCK_METHOD("Security", AppIcons.Password, "nav_tab_security"),
-    VAULT("Vault", AppIcons.VpnKey, "nav_tab_vault"),
     SETTINGS("Settings", AppIcons.Settings, "nav_tab_settings")
 }
 
@@ -38,6 +43,42 @@ fun AppLockerMainNavigation(
             snackbarHostState.showSnackbar(msg)
             viewModel.clearSnackbar()
         }
+    }
+
+    // While persisted settings load from Room, show a neutral splash —
+    // never the setup screen — so completed setups go straight home.
+    if (uiState.isInitializing) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(ObsidianDark)
+                .testTag("app_splash"),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    imageVector = AppIcons.Security,
+                    contentDescription = null,
+                    tint = CyberCyanLight,
+                    modifier = Modifier.size(64.dp)
+                )
+                Text(
+                    text = "App Locker",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                CircularProgressIndicator(
+                    color = CyberCyanLight,
+                    strokeWidth = 3.dp,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+        return
     }
 
     // Check onboarding completion
@@ -187,13 +228,6 @@ fun AppLockerMainNavigation(
                     LockTypeConfigScreen(
                         settings = uiState.securitySettings,
                         onSaveSettings = viewModel::updateLockSettings
-                    )
-                }
-                MainTab.VAULT -> {
-                    SecurityVaultScreen(
-                        vaultItems = uiState.vaultItems,
-                        onAddVaultItem = viewModel::addVaultItem,
-                        onDeleteVaultItem = viewModel::deleteVaultItem
                     )
                 }
                 MainTab.SETTINGS -> {

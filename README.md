@@ -43,7 +43,7 @@ A modern, high-performance Android App Locker built with **Jetpack Compose**, **
   - **Alphanumeric Password** — Full password protection with visibility toggles.
   - **Biometric Authentication** — Android `BiometricPrompt` integration (Fingerprint / Face Unlock).
 - ⚡ **Real-Time Detection Engine**:
-  - **Foreground Monitoring** — High-precision detection via Android `UsageStatsManager` with battery-optimized polling.
+  - **Event-Driven Monitoring** — The OS wakes App Locker's accessibility service only when a window changes, so detection is instant and costs ~0% CPU while idle. No polling, no foreground service.
 - 🖼️ **Non-Intrusive Overlay Screen**:
   - System Alert Window (`SYSTEM_ALERT_WINDOW`) overlay presenting authentication without killing background processes.
   - Opens with an animated padlock-engage transition; quick-dismiss and emergency recovery questions.
@@ -224,7 +224,7 @@ When manually installing an APK from GitHub or local storage, Android 13+ may re
 1. Go to **Settings → Apps → App Locker** (or tap **Open App Info** inside the app's Settings tab).
 2. Tap the **⋮** overflow menu in the top-right corner.
 3. Select **Allow restricted settings** and authenticate with your lock screen.
-4. Return to App Locker to toggle **Usage Access** and **Display Over Other Apps**.
+4. Return to App Locker to toggle **Display Over Other Apps** and **Accessibility**.
 
 ---
 
@@ -316,7 +316,7 @@ Both build types run R8 with `proguard-android-optimize.txt` plus project rules 
 
 - **APK size < 5 MB** — vector drawables only, R8 + resource shrinking, no third-party image-loading library in the runtime graph.
 - **Cold start** — Compose-only UI, no legacy `View` inflation; the animated system splash covers settings load, then `MainActivity` boots straight into the navigation graph.
-- **Battery** — `UsageStatsManager` polled on a fixed 300 ms interval inside the foreground service; idle when no protected apps are selected.
+- **Battery** — Event-driven: the OS binds the accessibility service and it does zero work until a window actually changes, so it stays at ~0% CPU while idle. Nothing polls, no wake locks, no foreground service.
 - **Memory** — All state lives in a single `ViewModel` (`StateFlow` collected via `collectAsState`); one state object drives every screen.
 
 ---

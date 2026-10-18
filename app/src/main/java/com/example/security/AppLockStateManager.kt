@@ -12,14 +12,9 @@ import java.util.concurrent.ConcurrentHashMap
  * Central, in-memory state for the app lock. No database access happens here,
  * so every lock decision is a couple of hash lookups.
  *
- * Two engines can drive interception:
- *  - [AppLockAccessibilityService]: event-driven and dormant until the OS reports
- *    a window change. This is the low-battery path and never polls.
- *  - [AppLockForegroundService]: compatibility fallback that only polls while the
- *    screen is ON, for users who do not want to grant Accessibility access.
- *
- * Both engines share the caches below and only one of them should be active at a
- * time (the ViewModel/BootReceiver enforce this).
+ * One engine drives interception: [AppLockAccessibilityService] is event-driven and
+ * dormant until the OS reports a window change. Nothing polls, no foreground
+ * service is ever started, so the app consumes ~0% CPU while idle.
  */
 object AppLockStateManager {
 
@@ -36,9 +31,6 @@ object AppLockStateManager {
 
     @Volatile
     private var accessibilityEngineActive = false
-
-    @Volatile
-    private var pollingEngineActive = false
 
     /** Master switch driven by the user's "Real-Time Protection" toggle. */
     @Volatile
@@ -60,16 +52,7 @@ object AppLockStateManager {
 
     fun setAccessibilityEngineActive(active: Boolean) {
         accessibilityEngineActive = active
-        publishProtectionState()
-    }
-
-    fun setPollingEngineActive(active: Boolean) {
-        pollingEngineActive = active
-        publishProtectionState()
-    }
-
-    private fun publishProtectionState() {
-        _isProtectionActive.value = accessibilityEngineActive || pollingEngineActive
+        _isProtectionActive.value = active
     }
 
     fun updateLockedPackages(packages: Collection<String>) {

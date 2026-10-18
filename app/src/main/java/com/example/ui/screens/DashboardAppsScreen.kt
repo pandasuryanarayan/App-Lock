@@ -33,7 +33,6 @@ fun DashboardAppsScreen(
     lockedAppsMap: Map<String, Boolean>,
     searchQuery: String,
     selectedCategory: String,
-    isUsagePermissionGranted: Boolean,
     isOverlayPermissionGranted: Boolean,
     isAccessibilityPermissionGranted: Boolean,
     isProtectionActive: Boolean,
@@ -45,15 +44,14 @@ fun DashboardAppsScreen(
     onUnlockAll: () -> Unit,
     onTestLockOverlay: (AppItemInfo) -> Unit,
     onLaunchRealApp: (AppItemInfo) -> Unit,
-    onGrantUsagePermission: () -> Unit,
     onGrantOverlayPermission: () -> Unit,
     onGrantAccessibilityPermission: () -> Unit
 ) {
     val lockedCount = lockedAppsMap.count { it.value }
     val totalApps = installedApps.size
-    // Accessibility or Usage Access is enough to detect app launches; the
-    // overlay permission keeps the lock screen launch reliable in the background.
-    val hasMonitoringPermission = isAccessibilityPermissionGranted || isUsagePermissionGranted
+    // Accessibility is the only detection path (event-driven, no polling).
+    // The overlay permission lets the lock screen launch over the target app.
+    val hasMonitoringPermission = isAccessibilityPermissionGranted
     // Version-aware: overlay blocks only on Android 10+ (BAL rule).
     val isOverlayMandatory = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
     val versionLabel = com.example.security.PermissionHelper.androidVersionLabel()
@@ -140,7 +138,7 @@ fun DashboardAppsScreen(
                                 text = if (needOverlayStep)
                                     "Step 1 of 2: Display (Must allow on $versionLabel)"
                                 else
-                                    "Step 2 of 2: How to detect (need 1 on $versionLabel)",
+                                    "Step 2 of 2: Accessibility (Must enable)",
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
                                 fontSize = 14.sp
@@ -166,38 +164,16 @@ fun DashboardAppsScreen(
                             }
                         }
 
-                        // Step 2: after Step 1 (or directly below 10).
+                        // Step 2 (mandatory): after Step 1, or directly below Android 10.
                         if (needDetectionStep) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Button(
-                                    onClick = onGrantAccessibilityPermission,
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = ShieldGreen),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                    modifier = Modifier.weight(1f).testTag("grant_accessibility_perm_btn")
-                                ) {
-                                    Text("Accessibility ★", fontSize = 11.sp)
-                                }
-                                OutlinedButton(
-                                    onClick = onGrantUsagePermission,
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                    modifier = Modifier.weight(1f).testTag("grant_usage_perm_btn")
-                                ) {
-                                    Text("Usage Access", fontSize = 11.sp, color = Color.White)
-                                }
-                            }
-                        }
-
-                        if (isOverlayPermissionGranted && isUsagePermissionGranted && !isAccessibilityPermissionGranted) {
-                            TextButton(
+                            Button(
                                 onClick = onGrantAccessibilityPermission,
-                                modifier = Modifier.testTag("switch_accessibility_btn")
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = ShieldGreen),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.fillMaxWidth().testTag("grant_accessibility_perm_btn")
                             ) {
-                                Text("Switch to Accessibility (Recommended)", fontSize = 11.sp, color = CyberCyanLight)
+                                Text("Enable Accessibility (required)", fontSize = 11.sp)
                             }
                         }
                     }

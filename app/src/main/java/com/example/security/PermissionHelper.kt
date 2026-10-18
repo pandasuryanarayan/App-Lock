@@ -1,65 +1,15 @@
 package com.example.security
 
-import android.app.AppOpsManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import android.os.Process
 import android.provider.Settings
 import android.text.TextUtils
 import android.widget.Toast
-import androidx.core.app.AppOpsManagerCompat
-import androidx.core.content.ContextCompat
 
 object PermissionHelper {
-
-    fun hasUsageAccess(context: Context): Boolean {
-        return try {
-            val mode = AppOpsManagerCompat.noteProxyOpNoThrow(
-                context,
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                context.packageName
-            )
-            if (mode == AppOpsManagerCompat.MODE_ALLOWED) {
-                return true
-            }
-
-            // Fallback check by querying usage stats directly
-            val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? android.app.usage.UsageStatsManager
-            val time = System.currentTimeMillis()
-            val stats = usageStatsManager?.queryUsageStats(
-                android.app.usage.UsageStatsManager.INTERVAL_DAILY,
-                time - 1000 * 60 * 60,
-                time
-            )
-            !stats.isNullOrEmpty()
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    fun openUsageAccessSettings(context: Context) {
-        try {
-            // Android Usage Access settings screen does not support package URI matching
-            val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            try {
-                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.fromParts("package", context.packageName, null)
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                context.startActivity(intent)
-            } catch (ex: Exception) {
-                Toast.makeText(context, "Please open Settings > Apps > Special app access > Usage access", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
 
     fun openAppDetailsSettings(context: Context) {
         try {
@@ -104,20 +54,10 @@ object PermissionHelper {
         }
     }
 
-    fun hasNotificationPermission(context: Context): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-    }
-
     /**
      * True when the user has enabled App Locker's accessibility service in
-     * Settings > Accessibility. This is the low-battery, event-driven engine.
+     * Settings > Accessibility. This is the event-driven engine — the only
+     * detection path, and the reason nothing has to stay running.
      */
     fun isAccessibilityServiceEnabled(context: Context): Boolean {
         return try {
@@ -156,30 +96,33 @@ object PermissionHelper {
         }
     }
 
+    /**
+     * The ONE detection path: the event-driven accessibility service.
+     *
+     * There is deliberately no Usage Access fallback. UsageStatsManager exposes no
+     * event/callback API, so it can only be polled — and polling means keeping a
+     * foreground service resident forever, which is exactly what this build avoids.
+     */
     fun hasAnyMonitoringPermission(context: Context): Boolean {
-        return isAccessibilityServiceEnabled(context) || hasUsageAccess(context)
+        return isAccessibilityServiceEnabled(context)
     }
 
-    // ---- Ordered / mandatory logic (offline / sideload build) ----
-    // Step 1 (MANDATORY on 10+): Overlay — Android 10+ blocks background startActivity
-    // without it, so LockOverlayActivity can never appear.
-    // Step 2 (RECOMMENDED): Accessibility — event-driven detection, ~0% battery.
-    // Step 3 (FALLBACK): Usage Access — only needed if user skips Step 2.
+    // ---- Ordered / mandatory logic (sideload build) ----
+    // Step 1 (MANDATORY on 10+): Overlay — AOSP BackgroundActivityStartController
+    // only lets a background app start an activity via BAL_ALLOW_SAW_PERMISSION /
+    // BAL_ALLOW_NON_APP_VISIBLE_WINDOW, so LockOverlayActivity needs this. It is a
+    // static grant and keeps nothing running.
+    // Step 2 (MANDATORY): Accessibility — the only event-driven detection API.
     //
     // Version-aware (minSdk 24, target 36):
     //  - API < 29 (7.0-9): background launches still allowed, overlay is
     //    RECOMMENDED (reliability) but not blocking.
     //  - API >= 29 (10+): overlay is MANDATORY (BAL exemption).
-    //  - API >= 33 (13+): + POST_NOTIFICATIONS for FGS + restricted-settings guide.
-    //  - API >= 34 (14+): FGS must be specialUse (already declared).
+    //  - API >= 33 (13+): sideloaded builds may need "Allow restricted settings".
 
     /** Overlay is blocking only on Android 10+. Below 10 it is recommended. */
     fun isOverlayMandatory(): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-
-    /** Notification runtime permission only exists on Android 13+. */
-    fun needsNotificationPermission(): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
     /** Sideload "Allow restricted settings" lock only exists on Android 13+. */
     fun needsRestrictedSettingsGuide(): Boolean =
@@ -212,23 +155,21 @@ object PermissionHelper {
         }
     }
 
-    /** Short version-aware why-text for Step 2. */
+    /** Why Step 2 (Accessibility) is required — the only detection path. */
     fun detectionWhyText(): String {
-        return "★ Accessibility: instant, almost no battery. Other option Usage: checks often, more battery."
+        return "Wakes only when a window changes. No polling, no background service, ~0% battery while idle."
     }
 
     /** One-line note shown at top of Settings, customized per version. */
     fun versionNoteText(): String {
         val v = androidVersionLabel()
         return when {
-            Build.VERSION.SDK_INT >= 34 ->
-                "Running on $v. Need: Step 1 Display (must) + Step 2 one detection. FGS runs as specialUse."
             Build.VERSION.SDK_INT >= 33 ->
-                "Running on $v. Need: Step 1 Display (must) + Step 2 one detection. If toggles are grey, allow restricted settings in App Info."
+                "Running on $v. Needs: Step 1 Display (must) + Step 2 Accessibility (must). If toggles are grey, allow restricted settings in App Info. Nothing runs in the background."
             Build.VERSION.SDK_INT >= 29 ->
-                "Running on $v. Need: Step 1 Display (must, background-launch rule) + Step 2 one detection."
+                "Running on $v. Needs: Step 1 Display (must, background-launch rule) + Step 2 Accessibility (must). Nothing runs in the background."
             else ->
-                "Running on $v. Need: Step 2 one detection. Step 1 Display is recommended but optional here."
+                "Running on $v. Needs: Step 2 Accessibility (must). Step 1 Display is recommended but optional here. Nothing runs in the background."
         }
     }
 
@@ -247,28 +188,6 @@ object PermissionHelper {
         if (isOverlayMandatory() && !hasOverlayPermission(context)) return "OVERLAY"
         if (!hasAnyMonitoringPermission(context)) return "DETECTION"
         return null
-    }
-
-    fun startRealTimeProtectionService(context: Context) {
-        try {
-            val intent = Intent(context, AppLockForegroundService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                ContextCompat.startForegroundService(context, intent)
-            } else {
-                context.startService(intent)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    fun stopRealTimeProtectionService(context: Context) {
-        try {
-            val intent = Intent(context, AppLockForegroundService::class.java)
-            context.stopService(intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
     }
 
     fun launchApp(context: Context, packageName: String): Boolean {

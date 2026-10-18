@@ -10,12 +10,10 @@ import kotlinx.coroutines.launch
 /**
  * Device boot hook.
  *
- * Boot does NOT start a 24/7 service any more:
+ * Nothing is started here and nothing stays running after boot:
  *  - The locked list + re-lock policy are simply loaded into memory.
- *  - The accessibility engine is automatically rebound by the system when the
- *    user has enabled it, so there is nothing to start.
- *  - The polling fallback is only started when Accessibility is NOT available,
- *    Usage Access is granted and the user left protection enabled.
+ *  - The event-driven accessibility engine is automatically rebound by the
+ *    system whenever the user has enabled it, so there is no service to start.
  */
 class BootReceiver : BroadcastReceiver() {
 
@@ -33,18 +31,8 @@ class BootReceiver : BroadcastReceiver() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Warm the in-memory caches without starting any engine.
+                // Warm the in-memory caches only. No service, no polling.
                 ProtectionBootstrapper.prime(appContext)
-
-                if (!ProtectionPreferences.isProtectionEnabled(appContext)) return@launch
-
-                // The event-driven engine is rebound by the OS on its own.
-                if (PermissionHelper.isAccessibilityServiceEnabled(appContext)) return@launch
-
-                // Compatibility fallback only (screen-on polling monitor).
-                if (PermissionHelper.hasUsageAccess(appContext)) {
-                    PermissionHelper.startRealTimeProtectionService(appContext)
-                }
             } finally {
                 pendingResult.finish()
             }

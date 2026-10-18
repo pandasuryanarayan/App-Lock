@@ -82,7 +82,7 @@ App Locker follows a pragmatic **MVVM + Repository** architecture with a unidire
                              │
 ┌────────────────────────────▼─────────────────────────────────────┐
 │                      System Services Layer                       │
-│  AppLockForegroundService (specialUse)  •  BootReceiver  •  OS   │
+│  AppLockAccessibilityService (event-driven)  •  BootReceiver      │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -123,14 +123,14 @@ App-Lock/
 │   ├── build.gradle.kts                # Module config, signing, R8, deps
 │   └── src/
 │       ├── main/
-│       │   ├── AndroidManifest.xml     # Permissions, FGS, receivers, overlay activity
+│       │   ├── AndroidManifest.xml     # Permissions, accessibility engine, receivers
 │       │   ├── java/com/example/
 │       │   │   ├── data/
 │       │   │   │   ├── db/             # Room database & type converters
 │       │   │   │   ├── dao/            # AppLockerDao — single source of DB access
 │       │   │   │   └── entities/       # LockedApp, SecuritySettings, IntruderLog
 │       │   │   ├── repository/         # AppLockerRepository — domain layer
-│       │   │   ├── security/           # AppLockForegroundService, AppLockStateManager,
+│       │   │   ├── security/           # AppLockAccessibilityService, AppLockStateManager,
 │       │   │   │                       # BiometricPromptManager, InstalledAppsManager,
 │       │   │   │                       # PermissionHelper, BootReceiver
 │       │   │   ├── viewmodel/          # AppLockerViewModel — UI state & business logic
@@ -172,12 +172,12 @@ App-Lock/
 | **`AppLockerRepository`** | Single source of truth wrapping the Room DAO; translates entities into domain models. | `repository/AppLockerRepository.kt` |
 | **`AppLockerDao`** | All Room queries (locked apps, security settings, intruder logs). | `data/dao/AppLockerDao.kt` |
 | **Entities** | `LockedAppEntity`, `SecuritySettingsEntity`, `IntruderLogEntity`. | `data/entities/` |
-| **`AppLockForegroundService`** | `specialUse` foreground service that polls `UsageStatsManager` and triggers the lock overlay when a protected app comes to the front. | `security/AppLockForegroundService.kt` |
+| **`AppLockAccessibilityService`** | The event-driven engine. Inert until the OS reports a window change, then checks the in-memory locked set and launches the lock overlay. Never polls, never runs as a foreground service. | `security/AppLockAccessibilityService.kt` |
 | **`AppLockStateManager`** | Tracks the global "protection active" state and current foreground package. | `security/AppLockStateManager.kt` |
 | **`BiometricPromptManager`** | Wraps `androidx.biometric` and surfaces success/error results to the ViewModel. | `security/BiometricPromptManager.kt` |
 | **`InstalledAppsManager`** | Queries `PackageManager` to build the user's pickable app list. | `security/InstalledAppsManager.kt` |
 | **`PermissionHelper`** | Centralized runtime + special-access permission checks and rationale flows. | `security/PermissionHelper.kt` |
-| **`BootReceiver`** | Re-enables protection after device reboot so the lock is never silently disabled. | `security/BootReceiver.kt` |
+| **`BootReceiver`** | Warms the in-memory caches after reboot. Starts no service — the OS rebinds the accessibility engine itself. | `security/BootReceiver.kt` |
 | **`LockOverlayActivity`** | Transparent `singleInstance` Activity launched over the target app that hosts `LockOverlayScreen`. | `ui/screens/LockOverlayActivity.kt` |
 | **`PinPadView`** | Custom Compose canvas for 4-digit PIN entry. | `ui/components/PinPadView.kt` |
 | **`LockEngageAnimation`** | Dependency-free Canvas padlock open → locked transition on the lock overlay. | `ui/components/LockEngageAnimation.kt` |
@@ -202,19 +202,20 @@ App Locker requires the following Android system permissions to deliver on-devic
 
 | Permission | Purpose | Requested In |
 | :--- | :--- | :--- |
-| `PACKAGE_USAGE_STATS` | Detects when protected apps are launched in the foreground. | `SettingsAndPermissionsScreen` (special access) |
-| `SYSTEM_ALERT_WINDOW` | Displays the security lock overlay above locked applications. | `SettingsAndPermissionsScreen` (special access) |
+| `SYSTEM_ALERT_WINDOW` | **Lets the background accessibility service start the lock activity.** AOSP `BackgroundActivityStartController` grants `BAL_ALLOW_SAW_PERMISSION` only when this is held — without it the lock never appears on Android 10+. Static grant, keeps nothing running. | `SettingsAndPermissionsScreen` (special access) |
+| *(Accessibility Service)* | **The only detection path.** OS wakes the service on a window change; zero work while idle, no polling, no foreground service. | `Settings > Accessibility` |
 | `USE_BIOMETRIC` / `USE_FINGERPRINT` | Enables fingerprint and biometric unlock prompts. | `LockTypeConfigScreen` |
-| `POST_NOTIFICATIONS` | Displays the active protection foreground service notification. | Runtime (API 33+) |
-| `VIBRATE` | Vibrates on failed unlock attempts (toggle in Security settings). | Manifest |
-| `RECEIVE_BOOT_COMPLETED` | Restarts protection automatically after device reboot. | `BootReceiver` |
 | `QUERY_ALL_PACKAGES` | Enumerates installed apps for the lock selection list. | Manifest (API 30+) |
-| `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_SPECIAL_USE` | Runs the persistent monitoring service. | `AppLockForegroundService` |
+| `VIBRATE` | Vibrates on failed unlock attempts (toggle in Security settings). | Manifest |
+| `RECEIVE_BOOT_COMPLETED` | Warms the in-memory caches after reboot. No service is started — the OS rebinds the accessibility engine itself. | `BootReceiver` |
 | `REORDER_TASKS` | Helps bring the overlay to the front when a protected app is launched. | Manifest |
-| `CAMERA` | Reserved for future biometric / intruder-capture features. | Manifest |
 
-> **Why does App Locker need Usage Access and Display Over Other Apps?**
-> These are *Special App Access* permissions, not runtime permissions. Android will never show a normal dialog — the user must opt in from system settings. This is by design and is the only way third-party app lockers can intercept foreground events on modern Android.
+> **Why not Usage Access?**
+> `UsageStatsManager` has no event/callback API — it can only be **polled**, and polling
+> means keeping a foreground service resident forever (plus `POST_NOTIFICATIONS` and
+> `FOREGROUND_SERVICE*`). That contradicts the whole event-driven design, so this build
+> deliberately ships neither the permission nor the service. Accessibility is the only
+> Android API that reports app launches as events.
 
 ### ⚠️ Note for Sideloaded Release APKs (Android 13+)
 

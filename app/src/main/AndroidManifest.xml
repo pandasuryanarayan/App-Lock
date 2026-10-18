@@ -4,14 +4,16 @@
 
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+    <!--
+        REQUIRED on Android 10+ / 16: the accessibility service runs in the
+        background, and AOSP BackgroundActivityStartController only allows it to
+        start LockOverlayActivity via BAL_ALLOW_SAW_PERMISSION /
+        BAL_ALLOW_NON_APP_VISIBLE_WINDOW. Without this the lock never appears.
+        Note: this does NOT make anything stay running — it is a static grant.
+    -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
-    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REORDER_TASKS" />
 
@@ -47,12 +49,13 @@
             android:theme="@style/Theme.MyApplication" />
 
         <!--
-            Event-driven lock engine (low battery mode).
+            THE ONLY ENGINE. Event-driven: the OS keeps this service registered
+            but it does ZERO work until a window actually changes, at which point
+            onAccessibilityEvent fires and we check the in-memory locked set.
 
-            The OS keeps this service registered but it does ZERO work until a
-            window actually changes, at which point onAccessibilityEvent fires and
-            we check the in-memory locked set. It never polls and retrieves no
-            window content (see res/xml/accessibility_service_config.xml).
+            It never polls, holds no wake lock, shows no notification and needs no
+            foreground service — so the app is not "running" at all while idle.
+            It retrieves no window content (see accessibility_service_config.xml).
         -->
         <service
             android:name=".security.AppLockAccessibilityService"
@@ -69,21 +72,9 @@
         </service>
 
         <!--
-            Compatibility fallback for users who do not want to grant Accessibility
-            access: a foreground monitor that polls ONLY while the screen is ON.
-            It is automatically stopped whenever the accessibility engine is active.
+            Warm the in-memory caches after a reboot. No service is started here:
+            the system rebinds the accessibility engine on its own.
         -->
-        <service
-            android:name=".security.AppLockForegroundService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="App security monitor to protect user selected applications" />
-        </service>
-
-        <!-- Broadcast Receiver for Device Boot -->
         <receiver
             android:name=".security.BootReceiver"
             android:enabled="true"

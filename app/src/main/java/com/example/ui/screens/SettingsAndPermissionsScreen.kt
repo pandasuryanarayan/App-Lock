@@ -24,11 +24,9 @@ import com.example.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsAndPermissionsScreen(
-    isUsagePermissionGranted: Boolean,
     isOverlayPermissionGranted: Boolean,
     isAccessibilityPermissionGranted: Boolean,
     isProtectionActive: Boolean,
-    onGrantUsagePermission: () -> Unit,
     onGrantOverlayPermission: () -> Unit,
     onGrantAccessibilityPermission: () -> Unit,
     onOpenAppDetails: () -> Unit,
@@ -201,7 +199,7 @@ fun SettingsAndPermissionsScreen(
 
                     HorizontalDivider(color = SlateSurfaceVariant)
 
-                    // Step 2: Detection — pick ONE. Accessibility ★, Usage fallback.
+                    // Step 2 (mandatory): Accessibility — the only event-driven detection API.
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -242,53 +240,6 @@ fun SettingsAndPermissionsScreen(
                                 modifier = Modifier.testTag("settings_grant_accessibility_btn")
                             ) {
                                 Text("GRANT ★", fontSize = 11.sp)
-                            }
-                        }
-                    }
-
-                    HorizontalDivider(color = SlateSurfaceVariant)
-
-                    // Usage Access Permission (fallback engine) — Step 2b
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(imageVector = AppIcons.DataUsage, contentDescription = null, tint = CyberCyanLight)
-                            Column {
-                                Text("Step 2b: Usage Access (Other option)", color = Color.White, fontWeight = FontWeight.SemiBold)
-                                Text("Only if you skip ★. Checks often, uses more battery.", fontSize = 12.sp, color = TextSecondaryDark)
-                            }
-                        }
-
-                        if (isUsagePermissionGranted) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = ShieldGreen.copy(alpha = 0.2f)
-                            ) {
-                                Text(
-                                    text = "GRANTED",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = ShieldGreen,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        } else {
-                            Button(
-                                onClick = onGrantUsagePermission,
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                enabled = step2Enabled,
-                                modifier = Modifier.testTag("settings_grant_usage_btn")
-                            ) {
-                                Text("GRANT", fontSize = 11.sp)
                             }
                         }
                     }

@@ -27,10 +27,9 @@ data class AppLockerUiState(
     val activeSimulationPackage: AppItemInfo? = null, // Holds app info currently testing overlay lock
     val simulationUnlocked: Boolean = false,
     val isOverlayPermissionGranted: Boolean = false,
-    val isUsagePermissionGranted: Boolean = false,
     val isAccessibilityPermissionGranted: Boolean = false,
     val isProtectionActive: Boolean = false,
-    // Ordered-flow helpers: Overlay (Step 1 mandatory) + (Accessibility OR Usage) = ready.
+    // Ordered-flow helpers: Overlay (Step 1 mandatory) + Accessibility (Step 2 mandatory) = ready.
     val isProtectionReady: Boolean = false,
     val nextMissingStep: String? = null, // "OVERLAY", "DETECTION", or null when ready
     val snackbarMessage: String? = null
@@ -70,9 +69,9 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
 
                     _uiState.update { it.copy(lockedAppsMap = lockedMap) }
 
-                    // Auto-start protection service if any app is locked and permissions are available
+                    // Mirror the engine state when the locked set changes.
                     if (activeLockedPackages.isNotEmpty()) {
-                        startProtectionServiceIfPermitted()
+                        syncProtectionWithPermissions()
                     }
                 }
             }
@@ -109,7 +108,6 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun refreshPermissions() {
         val app = getApplication<Application>()
-        val hasUsage = PermissionHelper.hasUsageAccess(app)
         val hasOverlay = PermissionHelper.hasOverlayPermission(app)
         val hasAccessibility = PermissionHelper.isAccessibilityServiceEnabled(app)
 
@@ -122,48 +120,36 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
 
         _uiState.update {
             it.copy(
-                isUsagePermissionGranted = hasUsage,
                 isOverlayPermissionGranted = hasOverlay,
                 isAccessibilityPermissionGranted = hasAccessibility,
-                isProtectionReady = hasOverlay && (hasAccessibility || hasUsage),
-                nextMissingStep = when {
-                    !hasOverlay -> "OVERLAY"
-                    !(hasAccessibility || hasUsage) -> "DETECTION"
-                    else -> null
-                }
+                isProtectionReady = PermissionHelper.isProtectionReady(app),
+                nextMissingStep = PermissionHelper.nextMissingStep(app)
             )
         }
     }
 
     /**
-     * Picks the best available engine for the enabled protection:
-     *  1. Accessibility  -> event-driven low battery engine (nothing to keep running).
-     *  2. Usage Access   -> screen-on-only polling fallback.
-     *  3. Neither        -> nothing runs until a permission is granted.
+     * Reflects the granted permissions in the in-memory engine state.
+     *
+     * No service is started here — the accessibility engine is bound by the OS the
+     * moment the user enables it, and stays dormant until a window actually changes.
+     * Without accessibility granted there is nothing to run.
      */
-    private fun startProtectionServiceIfPermitted() {
+    private fun syncProtectionWithPermissions() {
         val app = getApplication<Application>()
         if (!ProtectionPreferences.isProtectionEnabled(app)) return
         // Version-aware: overlay blocks only on Android 10+.
         if (PermissionHelper.isOverlayMandatory() && !PermissionHelper.hasOverlayPermission(app)) return
 
         if (PermissionHelper.isAccessibilityServiceEnabled(app)) {
-            // The event-driven engine owns interception; make sure the polling
-            // fallback (and its permanent notification) is not running.
-            PermissionHelper.stopRealTimeProtectionService(app)
-            AppLockStateManager.setPollingEngineActive(false)
-        } else if (PermissionHelper.hasUsageAccess(app)) {
-            PermissionHelper.startRealTimeProtectionService(app)
+            AppLockStateManager.setAccessibilityEngineActive(true)
         }
     }
 
-    fun requestUsageAccessPermission() {
-        PermissionHelper.openUsageAccessSettings(getApplication())
-    }
-
     /**
-     * Compulsory gate (sideload build, version-aware): Step 1 Overlay mandatory
-     * only on Android 10+, Step 2 one detection always (★ recommended).
+     * Compulsory gate (sideload build, version-aware):
+     *  - Step 1 Overlay: mandatory on Android 10+ (background-launch exemption).
+     *  - Step 2 Accessibility: mandatory everywhere — the only event-driven API.
      */
     private fun ensureMandatoryPermissions(): Boolean {
         val ctx = getApplication<Application>()
@@ -173,7 +159,7 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
             return false
         }
         if (!PermissionHelper.hasAnyMonitoringPermission(ctx)) {
-            showSnackbar("Step 2 required: enable Accessibility (recommended) or Usage Access.")
+            showSnackbar("Step 2 required: enable Accessibility to detect app launches.")
             PermissionHelper.openAccessibilitySettings(ctx)
             return false
         }
@@ -193,13 +179,13 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
-     * The "Real-Time Protection" toggle drives both engines:
-     *  - ON  -> activate the best available engine (Accessibility first).
-     *  - OFF -> stop the polling service and make the accessibility service
-     *           ignore every event, so nothing runs in the background.
+     * The "Real-Time Protection" toggle — no service is involved either way:
+     *  - ON  -> remember the choice; the OS keeps the accessibility engine bound.
+     *  - OFF -> remember the choice; the accessibility service ignores every event,
+     *           so it does zero work until the user turns protection back on.
      *
-     * Order is enforced: Step 1 Overlay (mandatory) must be granted first,
-     * then Step 2 one detection (Accessibility recommended, Usage fallback).
+     * Order is enforced: Step 1 Overlay (mandatory on 10+) then Step 2
+     * Accessibility (mandatory everywhere).
      */
     fun toggleProtectionService(enable: Boolean) {
         val app = getApplication<Application>()
@@ -207,9 +193,7 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
         if (!enable) {
             ProtectionPreferences.setProtectionEnabled(app, false)
             AppLockStateManager.isMasterEnabled = false
-            PermissionHelper.stopRealTimeProtectionService(app)
             AppLockStateManager.setAccessibilityEngineActive(false)
-            AppLockStateManager.setPollingEngineActive(false)
             showSnackbar("Protection paused. Locked apps are not intercepted.")
             return
         }
@@ -221,7 +205,7 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
         if (!PermissionHelper.hasAnyMonitoringPermission(app)) {
-            showSnackbar("Step 2 required: enable Accessibility (recommended) or Usage Access.")
+            showSnackbar("Step 2 required: enable Accessibility to detect app launches.")
             PermissionHelper.openAccessibilitySettings(app)
             return
         }
@@ -230,24 +214,12 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
         AppLockStateManager.isMasterEnabled = true
         refreshPermissions()
 
-        val hasAccessibility = PermissionHelper.isAccessibilityServiceEnabled(app)
-        val hasUsage = PermissionHelper.hasUsageAccess(app)
-
-        when {
-            hasAccessibility -> {
-                // Event-driven: nothing needs to stay running in the background.
-                PermissionHelper.stopRealTimeProtectionService(app)
-                AppLockStateManager.setAccessibilityEngineActive(true)
-                showSnackbar("Low Battery Mode active - event-driven protection enabled.")
-            }
-            hasUsage -> {
-                PermissionHelper.startRealTimeProtectionService(app)
-                showSnackbar("Compatibility Mode active (screen-on monitor). Grant Accessibility for low battery usage.")
-            }
-            else -> {
-                showSnackbar("Enable Accessibility (or Usage Access) to activate protection.")
-                PermissionHelper.openAccessibilitySettings(app)
-            }
+        if (PermissionHelper.isAccessibilityServiceEnabled(app)) {
+            AppLockStateManager.setAccessibilityEngineActive(true)
+            showSnackbar("Event-driven protection active. No service runs in the background.")
+        } else {
+            showSnackbar("Enable Accessibility to activate protection.")
+            PermissionHelper.openAccessibilitySettings(app)
         }
     }
 
@@ -286,7 +258,7 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
             if (!isCurrentlyLocked) {
                 // User is locking the app
                 AppLockStateManager.addLockedPackage(app.packageName)
-                startProtectionServiceIfPermitted()
+                syncProtectionWithPermissions()
                 showSnackbar("Locked ${app.appName}. Real-time protection active.")
             } else {
                 AppLockStateManager.removeLockedPackage(app.packageName)
@@ -299,7 +271,7 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
         if (!ensureMandatoryPermissions()) return
         viewModelScope.launch {
             repository.lockAllBankingApps(_uiState.value.installedApps)
-            startProtectionServiceIfPermitted()
+            syncProtectionWithPermissions()
             showSnackbar("Protected all Banking & Payment apps in real time!")
         }
     }
@@ -308,7 +280,7 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
         if (!ensureMandatoryPermissions()) return
         viewModelScope.launch {
             repository.lockAllApps(_uiState.value.installedApps)
-            startProtectionServiceIfPermitted()
+            syncProtectionWithPermissions()
             showSnackbar("All applications locked with real protection!")
         }
     }
@@ -343,7 +315,7 @@ class AppLockerViewModel(application: Application) : AndroidViewModel(applicatio
             repository.updateSecuritySettings(updated)
             // Auto lock sensitive banking apps on first setup
             repository.lockAllBankingApps(_uiState.value.installedApps)
-            startProtectionServiceIfPermitted()
+            syncProtectionWithPermissions()
             showSnackbar("Master security lock configured!")
         }
     }

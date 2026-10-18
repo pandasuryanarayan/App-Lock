@@ -209,7 +209,6 @@ fun AppLockerMainNavigation(
                         lockedAppsMap = uiState.lockedAppsMap,
                         searchQuery = uiState.searchQuery,
                         selectedCategory = uiState.selectedCategoryFilter,
-                        isUsagePermissionGranted = uiState.isUsagePermissionGranted,
                         isOverlayPermissionGranted = uiState.isOverlayPermissionGranted,
                         isAccessibilityPermissionGranted = uiState.isAccessibilityPermissionGranted,
                         isProtectionActive = uiState.isProtectionActive,
@@ -221,7 +220,6 @@ fun AppLockerMainNavigation(
                         onUnlockAll = viewModel::unlockAllApps,
                         onTestLockOverlay = viewModel::launchLockSimulation,
                         onLaunchRealApp = viewModel::launchRealApp,
-                        onGrantUsagePermission = viewModel::requestUsageAccessPermission,
                         onGrantOverlayPermission = viewModel::requestOverlayPermission,
                         onGrantAccessibilityPermission = viewModel::requestAccessibilityPermission
                     )
@@ -234,11 +232,9 @@ fun AppLockerMainNavigation(
                 }
                 MainTab.SETTINGS -> {
                     SettingsAndPermissionsScreen(
-                        isUsagePermissionGranted = uiState.isUsagePermissionGranted,
                         isOverlayPermissionGranted = uiState.isOverlayPermissionGranted,
                         isAccessibilityPermissionGranted = uiState.isAccessibilityPermissionGranted,
                         isProtectionActive = uiState.isProtectionActive,
-                        onGrantUsagePermission = viewModel::requestUsageAccessPermission,
                         onGrantOverlayPermission = viewModel::requestOverlayPermission,
                         onGrantAccessibilityPermission = viewModel::requestAccessibilityPermission,
                         onOpenAppDetails = viewModel::openAppDetailsSettings,

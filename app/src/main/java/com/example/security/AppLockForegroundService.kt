@@ -16,11 +16,21 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.example.MainActivity
-import com.example.data.db.AppLockerDatabase
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectLatest
 
+/**
+ * Compatibility fallback engine for users who do not want to grant Accessibility
+ * access. It polls UsageStats - but ONLY while the screen is ON:
+ *
+ *  - SCREEN_OFF -> clear temporary unlocks and cancel the polling loop (no CPU,
+ *    no wakeups while the phone is in a pocket).
+ *  - SCREEN_ON  -> resume polling.
+ *
+ * When the accessibility engine is available this service stops itself and never
+ * shows its permanent notification.
+ */
 class AppLockForegroundService : Service() {
 
     companion object {
@@ -34,11 +44,26 @@ class AppLockForegroundService : Service() {
     private var monitoringJob: Job? = null
     private var usageStatsManager: UsageStatsManager? = null
 
+    private var receiverRegistered = false
+    private var pollingActive = false
+
+    @Volatile
+    private var isScreenOn = true
+
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == Intent.ACTION_SCREEN_OFF) {
-                Log.d(TAG, "Screen off detected, relocking all apps")
-                AppLockStateManager.relockAll()
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_OFF -> {
+                    Log.d(TAG, "Screen off -> relocking apps and pausing the polling loop")
+                    isScreenOn = false
+                    AppLockStateManager.relockAll()
+                    stopMonitoringLoop()
+                }
+                Intent.ACTION_SCREEN_ON -> {
+                    Log.d(TAG, "Screen on -> resuming the polling loop")
+                    isScreenOn = true
+                    startMonitoringLoop()
+                }
             }
         }
     }
@@ -65,53 +90,71 @@ class AppLockForegroundService : Service() {
             startForeground(NOTIFICATION_ID, notification)
         }
 
-        val filter = IntentFilter(Intent.ACTION_SCREEN_OFF)
-        registerReceiver(screenReceiver, filter)
+        // Low-battery architecture: when Accessibility access is granted the
+        // event-driven engine does all the work, and when the user paused
+        // protection nothing should run at all. In both cases we never keep the
+        // polling fallback (or its permanent notification) alive.
+        if (PermissionHelper.isAccessibilityServiceEnabled(this) || !ProtectionPreferences.isProtectionEnabled(this)) {
+            Log.d(TAG, "Event-driven engine owns interception -> stopping polling fallback")
+            stopSelf()
+            return
+        }
 
-        AppLockStateManager.setProtectionActive(true)
-        observeDatabaseLockedApps()
-        startMonitoringLoop()
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_SCREEN_OFF)
+        }
+        ContextCompat.registerReceiver(this, screenReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        receiverRegistered = true
+
+        // ACTION_SCREEN_ON is a sticky broadcast, so this tells us the current state.
+        isScreenOn = registerReceiver(null, IntentFilter(Intent.ACTION_SCREEN_ON)) != null
+
+        pollingActive = true
+        AppLockStateManager.isMasterEnabled = true
+        AppLockStateManager.setPollingEngineActive(true)
+
+        // Cache the locked list + re-lock policy in memory once, then keep them hot.
+        ProtectionBootstrapper.attach(this, serviceScope)
+
+        if (isScreenOn) {
+            startMonitoringLoop()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "AppLockForegroundService onStartCommand")
-        return START_STICKY
+        // Only ask the system to restart us when this engine is really the active one.
+        return if (pollingActive) START_STICKY else START_NOT_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
         Log.d(TAG, "AppLockForegroundService onDestroy")
-        AppLockStateManager.setProtectionActive(false)
-        try {
-            unregisterReceiver(screenReceiver)
-        } catch (e: Exception) {
-            e.printStackTrace()
+        AppLockStateManager.setPollingEngineActive(false)
+        if (receiverRegistered) {
+            try {
+                unregisterReceiver(screenReceiver)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            receiverRegistered = false
         }
         serviceScope.cancel()
         super.onDestroy()
     }
 
-    private fun observeDatabaseLockedApps() {
-        serviceScope.launch {
-            try {
-                val db = AppLockerDatabase.getInstance(applicationContext)
-                db.appLockerDao().getAllLockedApps().collectLatest { lockedList ->
-                    val lockedPackages = lockedList.filter { it.isLocked }.map { it.packageName }.toSet()
-                    AppLockStateManager.updateLockedPackages(lockedPackages)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error observing locked apps from DB", e)
-            }
-        }
-    }
-
     private fun startMonitoringLoop() {
-        monitoringJob?.cancel()
+        if (monitoringJob?.isActive == true) return
         monitoringJob = serviceScope.launch {
             while (isActive) {
                 try {
-                    if (PermissionHelper.hasUsageAccess(applicationContext)) {
+                    if (!AppLockStateManager.isMasterEnabled) {
+                        // Safety net: the master toggle normally stops this service.
+                        break
+                    }
+                    if (isScreenOn && PermissionHelper.hasUsageAccess(applicationContext)) {
                         val topPackage = getForegroundPackage()
                         if (topPackage != null && topPackage.isNotEmpty()) {
                             AppLockStateManager.checkAndIntercept(applicationContext, topPackage)
@@ -122,7 +165,15 @@ class AppLockForegroundService : Service() {
                 }
                 delay(POLL_INTERVAL_MS)
             }
+            if (!AppLockStateManager.isMasterEnabled) {
+                stopSelf()
+            }
         }
+    }
+
+    private fun stopMonitoringLoop() {
+        monitoringJob?.cancel()
+        monitoringJob = null
     }
 
     private fun getForegroundPackage(): String? {
@@ -169,7 +220,7 @@ class AppLockForegroundService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("App Locker Protection Active")
-            .setContentText("Protected apps are secured in real time")
+            .setContentText("Compatibility mode: monitoring while the screen is on")
             .setSmallIcon(android.R.drawable.ic_lock_lock)
             .setContentIntent(pendingIntent)
             .setOngoing(true)

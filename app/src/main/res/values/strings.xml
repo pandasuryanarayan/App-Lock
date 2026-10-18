@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">App Locker</string>
+    <string name="accessibility_service_description">App Locker watches for app window changes only to detect when one of your protected apps comes to the foreground, so it can show your unlock screen instantly. It is event-driven (no background polling) and never reads, stores, or shares any on-screen content.</string>
 </resources>

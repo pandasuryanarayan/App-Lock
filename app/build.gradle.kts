@@ -1,4 +1,5 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.util.Properties
 
 plugins {
   alias(libs.plugins.android.application)
@@ -9,6 +10,17 @@ plugins {
   // alias(libs.plugins.google.services)
 }
 
+// --- Release signing ---------------------------------------------------------
+// Credentials are read from a gitignored keystore.properties file at the repo
+// root (see keystore.properties). Environment variables take precedence so CI
+// can inject secrets without touching the working copy.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+  if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.inputStream().use { load(it) }
+  }
+}
+
 android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -17,8 +29,8 @@ android {
     applicationId = "com.surya.applock"
     minSdk = 24
     targetSdk = 36
-    versionCode = 2
-    versionName = "2.0"
+    versionCode = 3
+    versionName = "3.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -29,14 +41,22 @@ android {
 
   signingConfigs {
     create("release") {
-        val keystorePath =
-            System.getenv("KEYSTORE_PATH")
-                ?: "${rootDir}/my-upload-key.jks"
+        // Precedence: environment (CI) -> keystore.properties -> legacy default path.
+        val envKeystorePath = System.getenv("KEYSTORE_PATH")
+        val propKeystorePath = keystoreProperties.getProperty("storeFile")
 
-        storeFile = file(keystorePath)
+        storeFile = when {
+            envKeystorePath != null -> file(envKeystorePath)
+            propKeystorePath != null -> rootProject.file(propKeystorePath)
+            else -> rootProject.file("my-upload-key.jks")
+        }
         storePassword = System.getenv("STORE_PASSWORD")
-        keyAlias = "upload"
+            ?: keystoreProperties.getProperty("storePassword")
+        keyAlias = System.getenv("KEY_ALIAS")
+            ?: keystoreProperties.getProperty("keyAlias")
+            ?: "upload"
         keyPassword = System.getenv("KEY_PASSWORD")
+            ?: keystoreProperties.getProperty("keyPassword")
     }
 
     create("debugConfig") {
@@ -51,6 +71,12 @@ android {
     release {
       isMinifyEnabled = true
       isShrinkResources = true
+      // Full R8 + shrinking: maximum optimizations.
+      isDebuggable = false
+      isJniDebuggable = false
+      isPseudoLocalesEnabled = false
+      isCrunchPngs = true
+      isZipAlignEnabled = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
     }

@@ -36,3 +36,8 @@ google-services.json
 # Build outputs — but keep the intentional versioned release APK
 *.apk
 !release/*.apk
+
+# Local tooling / OS noise
+assets/
+.metadata/
+*.log

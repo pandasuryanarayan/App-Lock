@@ -115,6 +115,140 @@ object PermissionHelper {
         }
     }
 
+    /**
+     * True when the user has enabled App Locker's accessibility service in
+     * Settings > Accessibility. This is the low-battery, event-driven engine.
+     */
+    fun isAccessibilityServiceEnabled(context: Context): Boolean {
+        return try {
+            val expected = ComponentName(context, AppLockAccessibilityService::class.java)
+            val enabledServices = Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            ) ?: return false
+
+            val splitter = TextUtils.SimpleStringSplitter(':')
+            splitter.setString(enabledServices)
+            while (splitter.hasNext()) {
+                val component = ComponentName.unflattenFromString(splitter.next())
+                if (component != null && component == expected) {
+                    return true
+                }
+            }
+            false
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun openAccessibilitySettings(context: Context) {
+        try {
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(
+                context,
+                "Open Settings > Accessibility and enable App Locker",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    fun hasAnyMonitoringPermission(context: Context): Boolean {
+        return isAccessibilityServiceEnabled(context) || hasUsageAccess(context)
+    }
+
+    // ---- Ordered / mandatory logic (offline / sideload build) ----
+    // Step 1 (MANDATORY on 10+): Overlay — Android 10+ blocks background startActivity
+    // without it, so LockOverlayActivity can never appear.
+    // Step 2 (RECOMMENDED): Accessibility — event-driven detection, ~0% battery.
+    // Step 3 (FALLBACK): Usage Access — only needed if user skips Step 2.
+    //
+    // Version-aware (minSdk 24, target 36):
+    //  - API < 29 (7.0-9): background launches still allowed, overlay is
+    //    RECOMMENDED (reliability) but not blocking.
+    //  - API >= 29 (10+): overlay is MANDATORY (BAL exemption).
+    //  - API >= 33 (13+): + POST_NOTIFICATIONS for FGS + restricted-settings guide.
+    //  - API >= 34 (14+): FGS must be specialUse (already declared).
+
+    /** Overlay is blocking only on Android 10+. Below 10 it is recommended. */
+    fun isOverlayMandatory(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+
+    /** Notification runtime permission only exists on Android 13+. */
+    fun needsNotificationPermission(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+
+    /** Sideload "Allow restricted settings" lock only exists on Android 13+. */
+    fun needsRestrictedSettingsGuide(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+
+    fun androidVersionLabel(): String {
+        val api = Build.VERSION.SDK_INT
+        val name = when {
+            api >= 36 -> "Android 16"
+            api >= 35 -> "Android 15"
+            api >= 34 -> "Android 14"
+            api >= 33 -> "Android 13"
+            api >= 32 -> "Android 12L"
+            api >= 31 -> "Android 12"
+            api >= 30 -> "Android 11"
+            api >= 29 -> "Android 10"
+            api >= 28 -> "Android 9"
+            api >= 26 -> "Android 8"
+            else -> "Android 7"
+        }
+        return "$name (API $api)"
+    }
+
+    /** Short version-aware why-text for Step 1, so users are not confused. */
+    fun overlayWhyText(): String {
+        return if (isOverlayMandatory()) {
+            "Must allow on ${androidVersionLabel()} — otherwise the lock never appears."
+        } else {
+            "Recommended on ${androidVersionLabel()} for a reliable lock. Must allow on Android 10+."
+        }
+    }
+
+    /** Short version-aware why-text for Step 2. */
+    fun detectionWhyText(): String {
+        return "★ Accessibility: instant, almost no battery. Other option Usage: checks often, more battery."
+    }
+
+    /** One-line note shown at top of Settings, customized per version. */
+    fun versionNoteText(): String {
+        val v = androidVersionLabel()
+        return when {
+            Build.VERSION.SDK_INT >= 34 ->
+                "Running on $v. Need: Step 1 Display (must) + Step 2 one detection. FGS runs as specialUse."
+            Build.VERSION.SDK_INT >= 33 ->
+                "Running on $v. Need: Step 1 Display (must) + Step 2 one detection. If toggles are grey, allow restricted settings in App Info."
+            Build.VERSION.SDK_INT >= 29 ->
+                "Running on $v. Need: Step 1 Display (must, background-launch rule) + Step 2 one detection."
+            else ->
+                "Running on $v. Need: Step 2 one detection. Step 1 Display is recommended but optional here."
+        }
+    }
+
+    /** True only when lock can actually work (version-aware). */
+    fun isProtectionReady(context: Context): Boolean {
+        val monitoring = hasAnyMonitoringPermission(context)
+        return if (isOverlayMandatory()) {
+            hasOverlayPermission(context) && monitoring
+        } else {
+            monitoring // overlay only recommended below Android 10
+        }
+    }
+
+    /** Returns "OVERLAY", "DETECTION", or null when everything mandatory is done. */
+    fun nextMissingStep(context: Context): String? {
+        if (isOverlayMandatory() && !hasOverlayPermission(context)) return "OVERLAY"
+        if (!hasAnyMonitoringPermission(context)) return "DETECTION"
+        return null
+    }
+
     fun startRealTimeProtectionService(context: Context) {
         try {
             val intent = Intent(context, AppLockForegroundService::class.java)

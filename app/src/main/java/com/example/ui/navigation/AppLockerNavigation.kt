@@ -211,6 +211,7 @@ fun AppLockerMainNavigation(
                         selectedCategory = uiState.selectedCategoryFilter,
                         isUsagePermissionGranted = uiState.isUsagePermissionGranted,
                         isOverlayPermissionGranted = uiState.isOverlayPermissionGranted,
+                        isAccessibilityPermissionGranted = uiState.isAccessibilityPermissionGranted,
                         isProtectionActive = uiState.isProtectionActive,
                         onSearchQueryChange = viewModel::setSearchQuery,
                         onCategorySelect = viewModel::setCategoryFilter,
@@ -221,7 +222,8 @@ fun AppLockerMainNavigation(
                         onTestLockOverlay = viewModel::launchLockSimulation,
                         onLaunchRealApp = viewModel::launchRealApp,
                         onGrantUsagePermission = viewModel::requestUsageAccessPermission,
-                        onGrantOverlayPermission = viewModel::requestOverlayPermission
+                        onGrantOverlayPermission = viewModel::requestOverlayPermission,
+                        onGrantAccessibilityPermission = viewModel::requestAccessibilityPermission
                     )
                 }
                 MainTab.LOCK_METHOD -> {
@@ -234,9 +236,11 @@ fun AppLockerMainNavigation(
                     SettingsAndPermissionsScreen(
                         isUsagePermissionGranted = uiState.isUsagePermissionGranted,
                         isOverlayPermissionGranted = uiState.isOverlayPermissionGranted,
+                        isAccessibilityPermissionGranted = uiState.isAccessibilityPermissionGranted,
                         isProtectionActive = uiState.isProtectionActive,
                         onGrantUsagePermission = viewModel::requestUsageAccessPermission,
                         onGrantOverlayPermission = viewModel::requestOverlayPermission,
+                        onGrantAccessibilityPermission = viewModel::requestAccessibilityPermission,
                         onOpenAppDetails = viewModel::openAppDetailsSettings,
                         onToggleProtectionService = viewModel::toggleProtectionService,
                         onNavigateToLockConfig = { currentTab = MainTab.LOCK_METHOD },

@@ -46,7 +46,33 @@
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:theme="@style/Theme.MyApplication" />
 
-        <!-- Foreground Lock Monitoring Service -->
+        <!--
+            Event-driven lock engine (low battery mode).
+
+            The OS keeps this service registered but it does ZERO work until a
+            window actually changes, at which point onAccessibilityEvent fires and
+            we check the in-memory locked set. It never polls and retrieves no
+            window content (see res/xml/accessibility_service_config.xml).
+        -->
+        <service
+            android:name=".security.AppLockAccessibilityService"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!--
+            Compatibility fallback for users who do not want to grant Accessibility
+            access: a foreground monitor that polls ONLY while the screen is ON.
+            It is automatically stopped whenever the accessibility engine is active.
+        -->
         <service
             android:name=".security.AppLockForegroundService"
             android:enabled="true"

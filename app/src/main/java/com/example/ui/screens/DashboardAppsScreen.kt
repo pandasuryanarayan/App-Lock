@@ -35,6 +35,7 @@ fun DashboardAppsScreen(
     selectedCategory: String,
     isUsagePermissionGranted: Boolean,
     isOverlayPermissionGranted: Boolean,
+    isAccessibilityPermissionGranted: Boolean,
     isProtectionActive: Boolean,
     onSearchQueryChange: (String) -> Unit,
     onCategorySelect: (String) -> Unit,
@@ -45,11 +46,19 @@ fun DashboardAppsScreen(
     onTestLockOverlay: (AppItemInfo) -> Unit,
     onLaunchRealApp: (AppItemInfo) -> Unit,
     onGrantUsagePermission: () -> Unit,
-    onGrantOverlayPermission: () -> Unit
+    onGrantOverlayPermission: () -> Unit,
+    onGrantAccessibilityPermission: () -> Unit
 ) {
     val lockedCount = lockedAppsMap.count { it.value }
     val totalApps = installedApps.size
-    val hasAllPermissions = isUsagePermissionGranted && isOverlayPermissionGranted
+    // Accessibility or Usage Access is enough to detect app launches; the
+    // overlay permission keeps the lock screen launch reliable in the background.
+    val hasMonitoringPermission = isAccessibilityPermissionGranted || isUsagePermissionGranted
+    // Version-aware: overlay blocks only on Android 10+ (BAL rule).
+    val isOverlayMandatory = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
+    val versionLabel = com.example.security.PermissionHelper.androidVersionLabel()
+    val overlayWhy = com.example.security.PermissionHelper.overlayWhyText()
+    val detectionWhy = com.example.security.PermissionHelper.detectionWhyText()
 
     val filteredApps = remember(installedApps, lockedAppsMap, searchQuery, selectedCategory) {
         installedApps.filter { app ->
@@ -105,8 +114,11 @@ fun DashboardAppsScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
-            // Real-Time System Permission Banner if missing
-            if (!hasAllPermissions) {
+            // Ordered permission banner: version-aware Step 1 -> Step 2.
+            // On 10+: Step 1 Overlay mandatory. Below 10: only detection blocks.
+            val needOverlayStep = isOverlayMandatory && !isOverlayPermissionGranted
+            val needDetectionStep = (isOverlayPermissionGranted || !isOverlayMandatory) && !hasMonitoringPermission
+            if (needOverlayStep || needDetectionStep) {
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = AlertRed.copy(alpha = 0.15f)),
@@ -125,44 +137,67 @@ fun DashboardAppsScreen(
                         ) {
                             Icon(imageVector = Icons.Default.Warning, contentDescription = null, tint = AlertRed)
                             Text(
-                                text = "Action Required for Real App Locking",
+                                text = if (needOverlayStep)
+                                    "Step 1 of 2: Display (Must allow on $versionLabel)"
+                                else
+                                    "Step 2 of 2: How to detect (need 1 on $versionLabel)",
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
                                 fontSize = 14.sp
                             )
                         }
                         Text(
-                            text = "Android requires system permissions to detect app launches and display the lock screen overlay in real time.",
+                            text = if (needOverlayStep) overlayWhy else detectionWhy,
                             fontSize = 12.sp,
                             color = TextSecondaryDark,
                             lineHeight = 16.sp
                         )
 
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            if (!isUsagePermissionGranted) {
-                                Button(
-                                    onClick = onGrantUsagePermission,
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                    modifier = Modifier.weight(1f).testTag("grant_usage_perm_btn")
-                                ) {
-                                    Text("Grant Usage Access", fontSize = 11.sp)
-                                }
+                        // Step 1: Overlay first, compulsory on 10+.
+                        if (needOverlayStep) {
+                            Button(
+                                onClick = onGrantOverlayPermission,
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.fillMaxWidth().testTag("grant_overlay_perm_btn")
+                            ) {
+                                Text("Allow Display (Mandatory on $versionLabel)", fontSize = 11.sp)
                             }
-                            if (!isOverlayPermissionGranted) {
+                        }
+
+                        // Step 2: after Step 1 (or directly below 10).
+                        if (needDetectionStep) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                                 Button(
-                                    onClick = onGrantOverlayPermission,
+                                    onClick = onGrantAccessibilityPermission,
                                     shape = RoundedCornerShape(8.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = ShieldGreen),
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                    modifier = Modifier.weight(1f).testTag("grant_overlay_perm_btn")
+                                    modifier = Modifier.weight(1f).testTag("grant_accessibility_perm_btn")
                                 ) {
-                                    Text("Enable Overlay", fontSize = 11.sp)
+                                    Text("Accessibility ★", fontSize = 11.sp)
                                 }
+                                OutlinedButton(
+                                    onClick = onGrantUsagePermission,
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    modifier = Modifier.weight(1f).testTag("grant_usage_perm_btn")
+                                ) {
+                                    Text("Usage Access", fontSize = 11.sp, color = Color.White)
+                                }
+                            }
+                        }
+
+                        if (isOverlayPermissionGranted && isUsagePermissionGranted && !isAccessibilityPermissionGranted) {
+                            TextButton(
+                                onClick = onGrantAccessibilityPermission,
+                                modifier = Modifier.testTag("switch_accessibility_btn")
+                            ) {
+                                Text("Switch to Accessibility (Recommended)", fontSize = 11.sp, color = CyberCyanLight)
                             }
                         }
                     }

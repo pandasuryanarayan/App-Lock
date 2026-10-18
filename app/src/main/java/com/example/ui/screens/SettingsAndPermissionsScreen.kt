@@ -26,9 +26,11 @@ import com.example.ui.theme.*
 fun SettingsAndPermissionsScreen(
     isUsagePermissionGranted: Boolean,
     isOverlayPermissionGranted: Boolean,
+    isAccessibilityPermissionGranted: Boolean,
     isProtectionActive: Boolean,
     onGrantUsagePermission: () -> Unit,
     onGrantOverlayPermission: () -> Unit,
+    onGrantAccessibilityPermission: () -> Unit,
     onOpenAppDetails: () -> Unit,
     onToggleProtectionService: (Boolean) -> Unit,
     onNavigateToLockConfig: () -> Unit,
@@ -92,7 +94,11 @@ fun SettingsAndPermissionsScreen(
                                     color = Color.White
                                 )
                                 Text(
-                                    text = if (isProtectionActive) "Active (Monitoring app launches)" else "Paused / Service Off",
+                                    text = when {
+                                        !isProtectionActive -> "Paused / Not Intercepting"
+                                        isAccessibilityPermissionGranted -> "Active - Low Battery Mode (event-driven)"
+                                        else -> "Active - Compatibility Mode (screen-on monitor)"
+                                    },
                                     fontSize = 12.sp,
                                     color = if (isProtectionActive) ShieldGreen else TextSecondaryDark
                                 )
@@ -109,7 +115,10 @@ fun SettingsAndPermissionsScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = "When active, App Locker runs a lightweight background monitor that intercepts locked applications immediately as soon as they open on your device.",
+                        text = "When active, App Locker intercepts locked applications the moment they open. " +
+                                "With Accessibility access the engine is fully event-driven and uses almost no battery " +
+                                "(no background polling, no permanent notification). Without it, a lightweight " +
+                                "screen-on monitor is used as a fallback.",
                         fontSize = 12.sp,
                         color = TextSecondaryDark,
                         lineHeight = 16.sp
@@ -117,12 +126,19 @@ fun SettingsAndPermissionsScreen(
                 }
             }
 
-            // System Permissions Required for Real Locking
+            // System Permissions Required for Real Locking — version-aware Step 1 -> Step 2.
             Text(
                 text = "Required System Permissions",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
+            )
+
+            Text(
+                text = com.example.security.PermissionHelper.versionNoteText(),
+                fontSize = 12.sp,
+                color = TextSecondaryDark,
+                lineHeight = 16.sp
             )
 
             Card(
@@ -131,53 +147,11 @@ fun SettingsAndPermissionsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    // Usage Access Permission
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(imageVector = AppIcons.DataUsage, contentDescription = null, tint = CyberCyanLight)
-                            Column {
-                                Text("Usage Access", color = Color.White, fontWeight = FontWeight.SemiBold)
-                                Text("Detects when locked apps open in system", fontSize = 12.sp, color = TextSecondaryDark)
-                            }
-                        }
-
-                        if (isUsagePermissionGranted) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = ShieldGreen.copy(alpha = 0.2f)
-                            ) {
-                                Text(
-                                    text = "GRANTED",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = ShieldGreen,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        } else {
-                            Button(
-                                onClick = onGrantUsagePermission,
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                modifier = Modifier.testTag("settings_grant_usage_btn")
-                            ) {
-                                Text("GRANT", fontSize = 11.sp)
-                            }
-                        }
-                    }
-
-                    HorizontalDivider(color = SlateSurfaceVariant)
-
-                    // Draw Over Apps Permission
+                    // Version-aware gating: below 10 overlay is recommended only.
+                    val overlayMandatory = com.example.security.PermissionHelper.isOverlayMandatory()
+                    val overlayWhy = com.example.security.PermissionHelper.overlayWhyText()
+                    val step2Enabled = isOverlayPermissionGranted || !overlayMandatory
+                    // Step 1 (version-aware): Display — blocking on 10+, recommended below.
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -190,8 +164,12 @@ fun SettingsAndPermissionsScreen(
                         ) {
                             Icon(imageVector = AppIcons.Layers, contentDescription = null, tint = CyberCyanLight)
                             Column {
-                                Text("Display Over Other Apps", color = Color.White, fontWeight = FontWeight.SemiBold)
-                                Text("Shows lock screen over protected apps", fontSize = 12.sp, color = TextSecondaryDark)
+                                Text(
+                                    if (overlayMandatory) "Step 1: Display (Must allow)" else "Step 1: Display (Recommended)",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(overlayWhy, fontSize = 12.sp, color = TextSecondaryDark)
                             }
                         }
 
@@ -216,9 +194,111 @@ fun SettingsAndPermissionsScreen(
                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                                 modifier = Modifier.testTag("settings_grant_overlay_btn")
                             ) {
+                                Text(if (overlayMandatory) "GRANT (MUST)" else "GRANT", fontSize = 11.sp)
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = SlateSurfaceVariant)
+
+                    // Step 2: Detection — pick ONE. Accessibility ★, Usage fallback.
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(imageVector = AppIcons.Accessibility, contentDescription = null, tint = ShieldGreen)
+                            Column {
+                                Text("Step 2a: Accessibility ★ Best", color = Color.White, fontWeight = FontWeight.SemiBold)
+                                Text("Sees app opens instantly. Almost no battery.", fontSize = 12.sp, color = TextSecondaryDark)
+                            }
+                        }
+
+                        if (isAccessibilityPermissionGranted) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = ShieldGreen.copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    text = "GRANTED ★",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ShieldGreen,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        } else {
+                            Button(
+                                onClick = onGrantAccessibilityPermission,
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = ShieldGreen),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                enabled = step2Enabled,
+                                modifier = Modifier.testTag("settings_grant_accessibility_btn")
+                            ) {
+                                Text("GRANT ★", fontSize = 11.sp)
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = SlateSurfaceVariant)
+
+                    // Usage Access Permission (fallback engine) — Step 2b
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(imageVector = AppIcons.DataUsage, contentDescription = null, tint = CyberCyanLight)
+                            Column {
+                                Text("Step 2b: Usage Access (Other option)", color = Color.White, fontWeight = FontWeight.SemiBold)
+                                Text("Only if you skip ★. Checks often, uses more battery.", fontSize = 12.sp, color = TextSecondaryDark)
+                            }
+                        }
+
+                        if (isUsagePermissionGranted) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = ShieldGreen.copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    text = "GRANTED",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ShieldGreen,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        } else {
+                            Button(
+                                onClick = onGrantUsagePermission,
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                enabled = step2Enabled,
+                                modifier = Modifier.testTag("settings_grant_usage_btn")
+                            ) {
                                 Text("GRANT", fontSize = 11.sp)
                             }
                         }
+                    }
+
+                    if (!step2Enabled) {
+                        Text(
+                            text = "Allow Step 1 Display first — Step 2 unlocks after that (10+ rule).",
+                            fontSize = 11.sp,
+                            color = TextSecondaryDark
+                        )
                     }
                 }
             }
@@ -239,7 +319,7 @@ fun SettingsAndPermissionsScreen(
                     ) {
                         Icon(imageVector = AppIcons.Info, contentDescription = null, tint = CyberCyanLight)
                         Text(
-                            text = "Permission Setup & Android 13+ Guide",
+                            text = "Permission Setup & Android 13+ Guide (on ${com.example.security.PermissionHelper.androidVersionLabel()})",
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                             fontSize = 14.sp
@@ -247,8 +327,11 @@ fun SettingsAndPermissionsScreen(
                     }
 
                     Text(
-                        text = "• Usage Access: In Android Settings, scroll down and find 'App Locker', then tap to toggle 'Allow usage tracking' ON.\n\n" +
-                                "• If Settings are Greyed Out / 'Restricted Setting': On Android 13+, sideloaded APKs have sensitive toggles locked. Open App Info, tap the 3 dots in the top right corner, tap 'Allow restricted settings', enter your screen lock, and return here to enable permissions.",
+                        text = "• Step 1 Display: GRANT above, then allow App Locker to display over apps. " +
+                                com.example.security.PermissionHelper.overlayWhyText() + "\n\n" +
+                                "• Step 2a ★ Accessibility: GRANT above, then enable 'App Locker' in Settings > Accessibility. Instant, low battery.\n\n" +
+                                "• Step 2b Usage (if you skip ★): allow usage tracking for App Locker. Runs only while screen is on.\n\n" +
+                                "• Greyed out? On Android 13+ open App Info > 3 dots > 'Allow restricted settings', then come back.",
                         fontSize = 12.sp,
                         color = TextSecondaryDark,
                         lineHeight = 17.sp
@@ -264,7 +347,14 @@ fun SettingsAndPermissionsScreen(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Icon(imageVector = AppIcons.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Text("Open App Info (Unblock Restricted Settings)", fontSize = 12.sp, color = CyberCyanLight)
+                            Text(
+                                if (com.example.security.PermissionHelper.needsRestrictedSettingsGuide())
+                                    "Open App Info (Allow restricted settings if grey)"
+                                else
+                                    "Open App Info",
+                                fontSize = 12.sp,
+                                color = CyberCyanLight
+                            )
                         }
                     }
                 }
